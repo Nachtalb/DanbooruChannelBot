@@ -1,0 +1,15 @@
+recursive-include danbooru *
+include *.txt
+include *.rst
+include *.md
+include *.py
+include LICENSE
+include development.cfg
+include main.cfg
+include production.cfg
+include versions.cfg
+
+exclude danbooru/bot/settings.py
+global-exclude *.pyc
+global-exclude ._*
+global-exclude *.mo

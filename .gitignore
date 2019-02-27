@@ -252,3 +252,11 @@ fabric.properties
 pyvenv.cfg
 .venv
 pip-selfcheck.json
+
+
+### Bot
+settings.py
+.idea/
+buildout.cfg
+src/
+.mr.developer.cfg
