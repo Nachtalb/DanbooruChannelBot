@@ -19,6 +19,8 @@ setup(name='DanbooruChannelBot',
       install_requires=[
           'mr.developer',
           'python-telegram-bot',
+          'pybooru',
+          'requests_html',
       ],
 
       entry_points={

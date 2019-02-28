@@ -12,8 +12,6 @@ from .settings import ADMINS, LOG_LEVEL, MODE, TELEGRAM_API_TOKEN
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=LOG_LEVEL)
 
-danbooru_bot = None
-
 
 class MQBot(Bot):
     """subclass of Bot which delegates send method handling to MQ"""
@@ -59,6 +57,8 @@ class DanbooruBot:
 
         self.log_self()
         self.send_message_if_reboot()
+
+        from . import command
 
         if self.mode == 'webhook':
             self.updater.start_webhook(listen=self.mode_config['listen'], port=self.mode_config['port'],
@@ -109,6 +109,9 @@ class DanbooruBot:
         if any(is_restart_arg):
             chat_id = is_restart_arg[0].split('=')[1]
             self.updater.bot.send_message(chat_id, 'Bot has successfully restarted.')
+
+
+danbooru_bot: DanbooruBot
 
 
 def main():
