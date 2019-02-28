@@ -1,15 +1,16 @@
 import logging
 from datetime import timedelta
 from pathlib import Path
-from typing import Callable, Dict, Tuple
+from typing import Callable, Dict, Tuple, List
 
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Job
+from telegram.parsemode import ParseMode
 
 from danbooru.bot.animedatabase_utils.danbooru_service import DanbooruService
 from danbooru.bot.animedatabase_utils.post import Post
 from danbooru.bot.bot import danbooru_bot
-from danbooru.bot.settings import CHAT_ID, SEARCH_TAGS, SERVICE, SHOWN_TAGS
+from danbooru.bot.settings import CHAT_ID, SEARCH_TAGS, SERVICE, SHOWN_TAGS, SHOW_ARTIST_TAG, SHOW_CHARACTER_TAG
 
 
 class Command:
@@ -69,14 +70,27 @@ class Command:
                 print(error)
                 pass
 
+    def to_tags(self, tags: List[str] or str) -> str:
+        if isinstance(tags, str):
+            tags = map(str.strip, tags.split(' '))
+        return ' '.join(map(lambda tag: f'#{tag}' , tags))
+
     def create_post(self, post: Post) -> Tuple[Callable, Dict]:
         tags = set(post.tag_string.split(' '))
-        caption = ' '.join(map(lambda tag: f'#{tag}', SHOWN_TAGS & tags))
+        caption = ''
+        if SHOWN_TAGS & tags:
+            caption = '<b>Tags:</b> ' + self.to_tags(SHOWN_TAGS & tags)
+
+        if SHOW_ARTIST_TAG and post.post.get('tag_string_artist'):
+            caption += '\n<b>Artist:</b> ' + self.to_tags(post.tag_string_artist)
+        if SHOW_CHARACTER_TAG and post.post.get('tag_string_character'):
+            caption += '\n<b>Characters:</b> ' + self.to_tags(post.tag_string_character)
 
         kwargs = {
             'chat_id': CHAT_ID,
             'caption': caption,
             'reply_markup': InlineKeyboardMarkup([[InlineKeyboardButton(text='View on Danbooru', url=post.link)]]),
+            'parse_mode': ParseMode.HTML,
         }
         if post.is_image:
             kwargs['photo'] = post.file

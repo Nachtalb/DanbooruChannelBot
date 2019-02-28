@@ -5,6 +5,9 @@ TELEGRAM_API_TOKEN = ''
 ADMINS = ['@USERNAME']
 CHAT_ID = -0
 
+SHOW_CHARACTER_TAG = True
+SHOW_ARTIST_TAG = True
+
 SEARCH_TAGS = set()
 SHOWN_TAGS = {  # Based on https://www.gwern.net/Danbooru2018 + a few additional
     '1girl', 'solo', 'long_hair', 'highres', 'breasts', 'blush', 'short_hair', 'smile', 'multiple_girls', 'open_mouth',
