@@ -73,7 +73,18 @@ class Command:
     def to_tags(self, tags: List[str] or str) -> str:
         if isinstance(tags, str):
             tags = map(str.strip, tags.split(' '))
-        return ' '.join(map(lambda tag: f'#{tag}' , tags))
+        tag_string = ' '.join(map(lambda tag: f'#{tag}' , tags))
+        return tag_string.translate(str.maketrans({
+            '-':  r'_',
+            ']':  r'_',
+            '\\': r'_',
+            '^':  r'_',
+            '$':  r'_',
+            '*':  r'_',
+            '.':  r'_',
+            '(':  r'_',
+            ')':  r'_',
+        }))
 
     def create_post(self, post: Post) -> Tuple[Callable, Dict]:
         tags = set(post.tag_string.split(' '))
