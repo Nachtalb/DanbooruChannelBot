@@ -15,6 +15,7 @@ from danbooru.bot.settings import CHAT_ID, SEARCH_TAGS, SERVICE, SHOWN_TAGS, SHO
 
 class Command:
     is_refreshing = False
+    is_manual_refresh = False
 
     def __init__(self):
         self.service = DanbooruService(**SERVICE)
@@ -125,7 +126,7 @@ class Command:
     def send_posts(self, posts):
         self.is_refreshing = True
         for post in posts:
-            if self.job and self.job.removed:
+            if self.job and self.job.removed and not self.is_manual_refresh:
                 self.logger.info('Scheduled task was stopped while refreshing')
                 break
 
@@ -143,6 +144,7 @@ class Command:
         if self.is_refreshing:
             update.message.reply_text('Refresh already running')
             return
+        self.is_manual_refresh = True
 
         update.message.reply_text('Start refresh')
         self.refresh(bot, update)
@@ -171,13 +173,18 @@ class Command:
             update.message.reply_text('Job created')
     @run_async
     def stop_scheduler(self, bot: Bot = None, update: Update = None):
+        if self.is_manual_refresh:
+            self.is_manual_refresh = False
+            if update and update.message:
+               update.message.reply_text('Refresh was stopped')
+            return
+
         if not self.job or self.job.removed:
             if update and update.message:
                 update.message.reply_text('Job already removed')
             return
 
         self.job.schedule_removal()
-
         self.logger.info('Job removed')
         if update and update.message:
             update.message.reply_text('Job scheduled for removal')
