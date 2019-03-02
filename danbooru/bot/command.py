@@ -77,7 +77,9 @@ class Command:
         return tag_string.translate(str.maketrans({
             '-':  r'_',
             ']':  r'_',
+            '[':  r'_',
             '\\': r'_',
+            '/': r'_',
             '^':  r'_',
             '$':  r'_',
             '*':  r'_',
