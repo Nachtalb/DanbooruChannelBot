@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Callable, Dict, Tuple, List
 
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import Job
+from telegram.ext import Job, run_async
 from telegram.parsemode import ParseMode
 
 from danbooru.bot.animedatabase_utils.danbooru_service import DanbooruService
@@ -25,7 +25,7 @@ class Command:
         self.job = None
         self.start_scheduler()
 
-        danbooru_bot.add_command(name='refresh', func=self.refresh)
+        danbooru_bot.add_command(name='refresh', func=self.refresh_command)
         danbooru_bot.add_command(name='start', func=self.start_scheduler)
         danbooru_bot.add_command(name='stop', func=self.stop_scheduler)
 
@@ -138,22 +138,26 @@ class Command:
                 self.last_post_id = post.id
         self.is_refreshing = False
 
-    def refresh(self, bot: Bot = None, update: Update or Job = None):
-        if self.job and not self.job.removed:
-            if isinstance(update, Update) and update.message:
-                update.message.reply_text('Start refresh' if not self.is_refreshing else 'Refresh already running')
+    @run_async
+    def refresh_command(self, bot: Bot, update: Update):
+        if self.is_refreshing:
+            update.message.reply_text('Refresh already running')
+            return
 
+        update.message.reply_text('Start refresh')
+        self.refresh(bot, update)
+        update.message.reply_text('Finished refresh')
+
+    def refresh(self, bot: Bot = None, update: Update or Job = None):
         if self.is_refreshing:
             self.logger.info('Refresh already running')
             return
+
         self.logger.info('Start refresh')
-
         self.send_posts(self.get_posts())
-
         self.logger.info('Finished refresh')
-        if isinstance(update, Update) and update.message:
-            update.message.reply_text('Finished refresh')
 
+    @run_async
     def start_scheduler(self, bot: Bot = None, update: Update = None):
         if self.job and not self.job.removed:
             if update and update.message:
@@ -165,7 +169,7 @@ class Command:
         self.logger.info('Job started')
         if update and update.message:
             update.message.reply_text('Job created')
-
+    @run_async
     def stop_scheduler(self, bot: Bot = None, update: Update = None):
         if not self.job or self.job.removed:
             if update and update.message:
