@@ -14,6 +14,8 @@ from danbooru.bot.settings import CHAT_ID, SEARCH_TAGS, SERVICE, SHOWN_TAGS, SHO
 
 
 class Command:
+    is_refreshing = False
+
     def __init__(self):
         self.service = DanbooruService(**SERVICE)
         self.last_post_file = Path('last_post.txt')
@@ -121,7 +123,12 @@ class Command:
         return func, kwargs
 
     def send_posts(self, posts):
+        self.is_refreshing = True
         for post in posts:
+            if self.job and self.job.removed:
+                self.logger.info('Scheduled task was stopped while refreshing')
+                break
+
             method, kwargs = self.create_post(post)
             try:
                 method(**kwargs)
@@ -129,12 +136,17 @@ class Command:
                 pass
             finally:
                 self.last_post_id = post.id
+        self.is_refreshing = False
 
     def refresh(self, bot: Bot = None, update: Update or Job = None):
-        self.logger.info('Start refresh')
         if self.job and not self.job.removed:
             if isinstance(update, Update) and update.message:
-                update.message.reply_text('Start refresh')
+                update.message.reply_text('Start refresh' if not self.is_refreshing else 'Refresh already running')
+
+        if self.is_refreshing:
+            self.logger.info('Refresh already running')
+            return
+        self.logger.info('Start refresh')
 
         self.send_posts(self.get_posts())
 
