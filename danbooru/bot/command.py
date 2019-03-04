@@ -93,6 +93,12 @@ class Command:
             ')': r'_',
         }))
 
+    def get_sauce_url(self, post: Post):
+        if post.post.get('pixiv_id'):
+            return 'https://www.pixiv.net/member_illust.php?mode=medium&illust_id={post.pixiv_id}'
+        elif post.post.get('source'):
+            return post.source
+
     def create_post(self, post: Post) -> Tuple[Callable, Dict]:
         tags = set(post.tag_string.split(' '))
         caption = ''
@@ -104,10 +110,18 @@ class Command:
         if settings.SHOW_CHARACTER_TAG and post.post.get('tag_string_character'):
             caption += '\n<b>Characters:</b> ' + self.to_tags(post.tag_string_character)
 
+        buttons = [
+            [InlineKeyboardButton(text='View on Danbooru', url=post.link)]
+        ]
+
+        source = self.get_sauce_url(post)
+        if source:
+            buttons.append([InlineKeyboardButton(text='Source', url=source)])
+
         kwargs = {
             'chat_id': settings.CHAT_ID,
             'caption': caption,
-            'reply_markup': InlineKeyboardMarkup([[InlineKeyboardButton(text='View on Danbooru', url=post.link)]]),
+            'reply_markup': InlineKeyboardMarkup(buttons),
             'parse_mode': ParseMode.HTML,
         }
         if post.is_image:
