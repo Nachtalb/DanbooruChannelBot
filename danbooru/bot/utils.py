@@ -21,7 +21,15 @@ class Utils:
 
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
+
+        danbooru_bot.add_command(name='chat', func=self.get_chat_command)
         danbooru_bot.add_command(name='settings', func=self.runtime_settings_command)
+
+    @run_async
+    def get_chat_command(self, bot: Bot, update: Update):
+        chat = bot.get_chat(settings.CHAT_ID)
+        text = chat.link or chat.title
+        update.message.reply_text(f'Chat: {text} -> `{chat.id}`', parse_mode=ParseMode.MARKDOWN)
 
     @run_async
     def runtime_settings_command(self, bot: Bot, update: Update):
