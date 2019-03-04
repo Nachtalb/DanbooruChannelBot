@@ -128,7 +128,7 @@ class Command:
     def send_posts(self, posts):
         self.is_refreshing = True
         for post in posts:
-            if self.job and self.job.removed and not self.is_manual_refresh:
+            if ((self.job and self.job.removed) or (not self.job)) and not self.is_manual_refresh:
                 self.logger.info('Scheduled task was stopped while refreshing')
                 break
 
