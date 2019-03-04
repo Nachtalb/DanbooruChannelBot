@@ -54,7 +54,8 @@ class Utils:
             return
 
         old_value = getattr(settings, setting, None)
-        if isinstance(old_value, (list, set, tuple)):
+        old_value_type = type(old_value)
+        if old_value_type in (list, set, tuple):
             new_value = list(deepcopy(old_value))
             if action == '+':
                 new_value.append(value)
@@ -75,6 +76,13 @@ class Utils:
             update.message.reply_text(f'Setting `{setting}` was changed: {action_name} `{value}` in `{old_value}`',
                                       parse_mode=ParseMode.MARKDOWN)
         else:
+            if old_value_type in (int, float):
+                try:
+                    value = old_value_type(value)
+                except ValueError:
+                    update.message.reply_text(f'Value must be `{old_value_type.__name__}`',
+                                              parse_mode=ParseMode.MARKDOWN)
+                    return
             setattr(settings, setting, value)
             update.message.reply_text(f'Setting `{setting}` was changed from `{old_value}` to `{value}`',
                                       parse_mode=ParseMode.MARKDOWN)
