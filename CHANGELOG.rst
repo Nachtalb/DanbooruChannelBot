@@ -4,7 +4,7 @@ Changelog
 1.0.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Fix /chat not working if the channel posting to is public
 
 
 1.0.1 (2019-03-04)

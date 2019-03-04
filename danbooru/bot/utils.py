@@ -29,7 +29,7 @@ class Utils:
     def get_chat_command(self, bot: Bot, update: Update):
         chat = bot.get_chat(settings.CHAT_ID)
         text = chat.link or chat.title
-        update.message.reply_text(f'Chat: {text} -> `{chat.id}`', parse_mode=ParseMode.MARKDOWN)
+        update.message.reply_text(f'Chat: [{chat.title}]({chat.link}) -> `{chat.id}`', parse_mode=ParseMode.MARKDOWN)
 
     @run_async
     def runtime_settings_command(self, bot: Bot, update: Update):
