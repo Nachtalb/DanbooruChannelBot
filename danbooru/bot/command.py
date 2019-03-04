@@ -1,10 +1,10 @@
 import logging
 from datetime import timedelta
 from pathlib import Path
-from typing import Callable, Dict, Tuple, List
+from typing import Callable, Dict, List, Tuple
 
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import Job
+from telegram.ext import run_async
 from telegram.parsemode import ParseMode
 
 from danbooru.bot.animedatabase_utils.danbooru_service import DanbooruService
@@ -14,6 +14,9 @@ from danbooru.bot.settings import CHAT_ID, SEARCH_TAGS, SERVICE, SHOWN_TAGS, SHO
 
 
 class Command:
+    is_refreshing = False
+    is_manual_refresh = False
+
     def __init__(self):
         self.service = DanbooruService(**SERVICE)
         self.last_post_file = Path('last_post.txt')
@@ -23,9 +26,9 @@ class Command:
         self.job = None
         self.start_scheduler()
 
-        danbooru_bot.add_command(name='refresh', func=self.refresh)
-        danbooru_bot.add_command(name='start', func=self.start_scheduler)
-        danbooru_bot.add_command(name='stop', func=self.stop_scheduler)
+        danbooru_bot.add_command(name='refresh', func=self.refresh_command)
+        danbooru_bot.add_command(name='start', func=self.start_command)
+        danbooru_bot.add_command(name='stop', func=self.stop_command)
 
     @property
     def last_post_id(self) -> int:
@@ -73,19 +76,20 @@ class Command:
     def to_tags(self, tags: List[str] or str) -> str:
         if isinstance(tags, str):
             tags = map(str.strip, tags.split(' '))
-        tag_string = ' '.join(map(lambda tag: f'#{tag}' , tags))
+        tag_string = ' '.join(map(lambda tag: f'#{tag}', tags))
         return tag_string.translate(str.maketrans({
-            '-':  r'_',
-            ']':  r'_',
-            '[':  r'_',
+            '-': r'_',
+            ']': r'_',
+            '[': r'_',
+            '\'': r'_',
             '\\': r'_',
             '/': r'_',
-            '^':  r'_',
-            '$':  r'_',
-            '*':  r'_',
-            '.':  r'_',
-            '(':  r'_',
-            ')':  r'_',
+            '^': r'_',
+            '$': r'_',
+            '*': r'_',
+            '.': r'_',
+            '(': r'_',
+            ')': r'_',
         }))
 
     def create_post(self, post: Post) -> Tuple[Callable, Dict]:
@@ -121,7 +125,12 @@ class Command:
         return func, kwargs
 
     def send_posts(self, posts):
+        self.is_refreshing = True
         for post in posts:
+            if self.job and self.job.removed and not self.is_manual_refresh:
+                self.logger.info('Scheduled task was stopped while refreshing')
+                break
+
             method, kwargs = self.create_post(post)
             try:
                 method(**kwargs)
@@ -129,42 +138,73 @@ class Command:
                 pass
             finally:
                 self.last_post_id = post.id
+        self.is_refreshing = False
 
-    def refresh(self, bot: Bot = None, update: Update or Job = None):
-        self.logger.info('Start refresh')
-        if self.job and not self.job.removed:
-            if isinstance(update, Update) and update.message:
-                update.message.reply_text('Start refresh')
-
-        self.send_posts(self.get_posts())
-
-        self.logger.info('Finished refresh')
-        if isinstance(update, Update) and update.message:
-            update.message.reply_text('Finished refresh')
-
-    def start_scheduler(self, bot: Bot = None, update: Update = None):
-        if self.job and not self.job.removed:
-            if update and update.message:
-                update.message.reply_text('Job already created')
+    def refresh(self, is_manual: bool = False):
+        if self.is_refreshing:
+            self.logger.info('Refresh already running')
             return
 
+        if is_manual:
+            self.is_manual_refresh = True
+
+        self.logger.info('Start refresh')
+        self.send_posts(self.get_posts())
+        self.logger.info('Finished refresh')
+
+    def start_scheduler(self):
+        if self.job and not self.job.removed:
+            return
+
+        self.logger.info('Starting scheduled job')
         self.job = danbooru_bot.updater.job_queue.run_repeating(self.refresh, interval=timedelta(minutes=5),
                                                                 first=0, name='danbooru_refresh')
-        self.logger.info('Job started')
-        if update and update.message:
-            update.message.reply_text('Job created')
 
-    def stop_scheduler(self, bot: Bot = None, update: Update = None):
-        if not self.job or self.job.removed:
-            if update and update.message:
-                update.message.reply_text('Job already removed')
+    def stop_refresh(self, is_manual: bool = False):
+        if is_manual:
+            self.logger.info('Stop manual refresh')
+            self.is_manual_refresh = False
+        else:
+            if not self.job or self.job.removed:
+                return
+            self.logger.info('Stop scheduled refresh')
+            self.job.schedule_removal()
+
+    # # # # # # # # #
+    # USER COMMANDS #
+    # # # # # # # # #
+
+    @run_async
+    def refresh_command(self, bot: Bot, update: Update):
+        if self.is_refreshing:
+            update.message.reply_text('Refresh already running')
             return
 
-        self.job.schedule_removal()
+        update.message.reply_text('Start refresh')
+        self.refresh(is_manual=True)
+        update.message.reply_text('Finished refresh')
 
-        self.logger.info('Job removed')
-        if update and update.message:
+    @run_async
+    def start_command(self, bot: Bot = None, update: Update = None):
+        if self.job and not self.job.removed:
+            update.message.reply_text('Job already exists')
+            return
+
+        update.message.reply_text('Starting job')
+        self.start_scheduler()
+
+    @run_async
+    def stop_command(self, bot: Bot = None, update: Update = None):
+        manual = False
+        if self.is_manual_refresh:
+            manual = True
+            update.message.reply_text('Refresh was stopped')
+        else:
+            if not self.job or self.job.removed:
+                update.message.reply_text('Job already removed')
+                return
             update.message.reply_text('Job scheduled for removal')
+        self.stop_refresh(is_manual=manual)
 
 
 command = Command()
