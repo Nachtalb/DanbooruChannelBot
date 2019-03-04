@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-version = '1.0.2'
+version = '1.0.3.dev0'
 
 setup(name='DanbooruChannelBot',
       version=version,
