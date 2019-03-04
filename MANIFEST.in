@@ -10,6 +10,7 @@ include production.cfg
 include versions.cfg
 
 exclude danbooru/bot/settings.py
+exclude last_post.txt
 global-exclude *.pyc
 global-exclude ._*
 global-exclude *.mo
