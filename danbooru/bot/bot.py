@@ -59,6 +59,7 @@ class DanbooruBot:
         self.send_message_if_reboot()
 
         from . import command
+        from . import utils
 
         if self.mode == 'webhook':
             self.updater.start_webhook(listen=self.mode_config['listen'], port=self.mode_config['port'],

@@ -10,7 +10,7 @@ from telegram.parsemode import ParseMode
 from danbooru.bot.animedatabase_utils.danbooru_service import DanbooruService
 from danbooru.bot.animedatabase_utils.post import Post
 from danbooru.bot.bot import danbooru_bot
-from danbooru.bot.settings import CHAT_ID, SEARCH_TAGS, SERVICE, SHOWN_TAGS, SHOW_ARTIST_TAG, SHOW_CHARACTER_TAG
+from danbooru.bot import settings
 
 
 class Command:
@@ -18,13 +18,14 @@ class Command:
     is_manual_refresh = False
 
     def __init__(self):
-        self.service = DanbooruService(**SERVICE)
+        self.service = DanbooruService(**settings.SERVICE)
         self.last_post_file = Path('last_post.txt')
         self._last_post_id = None
         self.logger = logging.getLogger(self.__class__.__name__)
 
         self.job = None
-        self.start_scheduler()
+        if settings.AUTO_START:
+            self.start_scheduler()
 
         danbooru_bot.add_command(name='refresh', func=self.refresh_command)
         danbooru_bot.add_command(name='start', func=self.start_command)
@@ -48,8 +49,8 @@ class Command:
 
     def is_ok(self, post: Post):
         tags = set(post.tag_string.split(' '))
-        white_list = set(filter(lambda tag: not tag.startswith('-'), SEARCH_TAGS))
-        black_list = set(map(lambda tag: tag.strip('-'), SEARCH_TAGS - white_list))
+        white_list = set(filter(lambda tag: not tag.startswith('-'), settings.SEARCH_TAGS))
+        black_list = set(map(lambda tag: tag.strip('-'), settings.SEARCH_TAGS - white_list))
 
         if not tags & black_list and tags & white_list == white_list:
             return True
@@ -95,16 +96,16 @@ class Command:
     def create_post(self, post: Post) -> Tuple[Callable, Dict]:
         tags = set(post.tag_string.split(' '))
         caption = ''
-        if SHOWN_TAGS & tags:
-            caption = '<b>Tags:</b> ' + self.to_tags(SHOWN_TAGS & tags)
+        if settings.SHOWN_TAGS & tags:
+            caption = '<b>Tags:</b> ' + self.to_tags(settings.SHOWN_TAGS & tags)
 
-        if SHOW_ARTIST_TAG and post.post.get('tag_string_artist'):
+        if settings.SHOW_ARTIST_TAG and post.post.get('tag_string_artist'):
             caption += '\n<b>Artist:</b> ' + self.to_tags(post.tag_string_artist)
-        if SHOW_CHARACTER_TAG and post.post.get('tag_string_character'):
+        if settings.SHOW_CHARACTER_TAG and post.post.get('tag_string_character'):
             caption += '\n<b>Characters:</b> ' + self.to_tags(post.tag_string_character)
 
         kwargs = {
-            'chat_id': CHAT_ID,
+            'chat_id': settings.CHAT_ID,
             'caption': caption,
             'reply_markup': InlineKeyboardMarkup([[InlineKeyboardButton(text='View on Danbooru', url=post.link)]]),
             'parse_mode': ParseMode.HTML,
@@ -127,7 +128,7 @@ class Command:
     def send_posts(self, posts):
         self.is_refreshing = True
         for post in posts:
-            if self.job and self.job.removed and not self.is_manual_refresh:
+            if ((self.job and self.job.removed) or (not self.job)) and not self.is_manual_refresh:
                 self.logger.info('Scheduled task was stopped while refreshing')
                 break
 
