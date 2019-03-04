@@ -113,10 +113,10 @@ class Command:
         if post.is_image:
             kwargs['photo'] = post.file
             func = danbooru_bot.updater.bot.send_photo
-        elif post.is_gif:
+        elif post.file_extension == 'mp4':
             kwargs['video'] = post.file
             func = danbooru_bot.updater.bot.send_video
-        elif post.is_video:
+        elif post.is_gif:
             kwargs['animation'] = post.file
             func = danbooru_bot.updater.bot.send_animation
         else:
