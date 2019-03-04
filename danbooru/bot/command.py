@@ -24,7 +24,8 @@ class Command:
         self.logger = logging.getLogger(self.__class__.__name__)
 
         self.job = None
-        self.start_scheduler()
+        if settings.AUTO_START:
+            self.start_scheduler()
 
         danbooru_bot.add_command(name='refresh', func=self.refresh_command)
         danbooru_bot.add_command(name='start', func=self.start_command)
