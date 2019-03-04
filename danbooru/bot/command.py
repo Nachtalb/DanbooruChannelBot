@@ -141,7 +141,7 @@ class Command:
                 self.last_post_id = post.id
         self.is_refreshing = False
 
-    def refresh(self, is_manual: bool = False):
+    def refresh(self, *args, is_manual: bool = False):
         if self.is_refreshing:
             self.logger.info('Refresh already running')
             return
