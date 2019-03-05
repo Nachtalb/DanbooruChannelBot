@@ -95,7 +95,7 @@ class Command:
 
     def get_sauce_url(self, post: Post):
         if post.post.get('pixiv_id'):
-            return 'https://www.pixiv.net/member_illust.php?mode=medium&illust_id={post.pixiv_id}'
+            return f'https://www.pixiv.net/member_illust.php?mode=medium&illust_id={post.pixiv_id}'
         elif post.post.get('source'):
             return post.source
 
