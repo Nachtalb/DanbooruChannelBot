@@ -1,7 +1,7 @@
 Changelog
 =========
 
-1.1.1 (unreleased)
+1.1.1 (2019-03-13)
 ------------------
 
 - Fix overlapping tags resulting in not MAX_TAGS tags shown
