@@ -4,6 +4,7 @@ from pathlib import Path
 from random import sample
 from typing import Callable, Collection, Dict, List, Set, Tuple
 
+from emoji import emojize
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import run_async
 from telegram.parsemode import ParseMode
@@ -121,12 +122,12 @@ class Command:
             caption += '\n<b>Characters:</b> ' + self.to_telegram_tags(post.tag_string_character)
 
         buttons = [
-            [InlineKeyboardButton(text='View on Danbooru', url=post.link)]
+            [InlineKeyboardButton(text=emojize(':package:'), url=post.link)]
         ]
 
         source = self.get_sauce_url(post)
         if source:
-            buttons.append([InlineKeyboardButton(text='Source', url=source)])
+            buttons[0].append(InlineKeyboardButton(text=emojize(':globe_with_meridians:'), url=source))
 
         kwargs = {
             'chat_id': settings.CHAT_ID,

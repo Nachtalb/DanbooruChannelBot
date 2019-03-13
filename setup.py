@@ -21,6 +21,7 @@ setup(name='DanbooruChannelBot',
           'python-telegram-bot',
           'pybooru',
           'requests_html',
+          'emoji',
       ],
 
       entry_points={

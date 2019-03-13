@@ -5,7 +5,7 @@ Changelog
 ------------------
 
 - Instead of only showing a set amount of tags, show a set amount and random ones till MAX_TAGS amount is reached
-
+- Show buttons in one row to decrease message height
 
 1.0.2 (2019-03-04)
 ------------------
