@@ -1,7 +1,7 @@
 Changelog
 =========
 
-1.0.3 (unreleased)
+1.1.0 (2019-03-13)
 ------------------
 
 - Instead of only showing a set amount of tags, show a set amount and random ones till MAX_TAGS amount is reached
