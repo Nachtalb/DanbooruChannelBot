@@ -12,6 +12,7 @@ class Utils:
     settings_whitelist = [
         'LOG_LEVEL',
         'SHOWN_TAGS',
+        'MAX_TAGS',
         'SEARCH_TAGS',
         'SHOW_ARTIST_TAG',
         'SHOW_CHARACTER_TAG',

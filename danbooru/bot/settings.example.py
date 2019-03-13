@@ -10,9 +10,9 @@ SHOW_CHARACTER_TAG = True
 SHOW_ARTIST_TAG = True
 
 SEARCH_TAGS = set()
-SHOWN_TAGS = {  # Based on https://www.gwern.net/Danbooru2018 + a few additional
-    '1girl', 'solo', 'long_hair', 'highres', 'breasts', 'blush', 'short_hair', 'smile', 'multiple_girls', 'open_mouth',
-    'looking_at_viewer', 'blue_eyes', 'blonde_hair', 'touhou', 'brown_hair', 'skirt', 'hat', 'thighhighs', 'black_hair',
+MAX_TAGS = 15
+SHOWN_TAGS = {  # Tags that will always be shown. Other tags will be selected randomly to reach MAX_TAGS
+    '1girl', '2girls', '3girls', '4girls', '5girls', '6+girls', 'highres', 'blue_eyes', 'blonde_hair',
     'loli', 'shota', 'incest', 'yuri', 'yaoi', 'dark_skin', 'nipples',
 }
 

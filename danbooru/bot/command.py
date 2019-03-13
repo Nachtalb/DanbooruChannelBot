@@ -1,16 +1,17 @@
 import logging
 from datetime import timedelta
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple
+from random import sample
+from typing import Callable, Collection, Dict, List, Set, Tuple
 
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import run_async
 from telegram.parsemode import ParseMode
 
+from danbooru.bot import settings
 from danbooru.bot.animedatabase_utils.danbooru_service import DanbooruService
 from danbooru.bot.animedatabase_utils.post import Post
 from danbooru.bot.bot import danbooru_bot
-from danbooru.bot import settings
 
 
 class Command:
@@ -74,7 +75,7 @@ class Command:
                 print(error)
                 pass
 
-    def to_tags(self, tags: List[str] or str) -> str:
+    def to_telegram_tags(self, tags: List[str] or str) -> str:
         if isinstance(tags, str):
             tags = map(str.strip, tags.split(' '))
         tag_string = ' '.join(map(lambda tag: f'#{tag}', tags))
@@ -99,16 +100,25 @@ class Command:
         elif post.post.get('source'):
             return post.source
 
+    def get_tags(self, available_tags: Collection[str]) -> Set[str]:
+        tags = settings.SHOWN_TAGS & set(available_tags)
+
+        fill_amount = settings.MAX_TAGS - len(tags)
+        fill_amount = fill_amount if fill_amount <= len(available_tags) else len(available_tags)
+
+        return tags | set(sample(available_tags, k=fill_amount))
+
     def create_post(self, post: Post) -> Tuple[Callable, Dict]:
         tags = set(post.tag_string.split(' '))
+        tags = self.get_tags(tags)
         caption = ''
-        if settings.SHOWN_TAGS & tags:
-            caption = '<b>Tags:</b> ' + self.to_tags(settings.SHOWN_TAGS & tags)
 
+        if tags:
+            caption = '<b>Tags:</b> ' + self.to_telegram_tags(tags)
         if settings.SHOW_ARTIST_TAG and post.post.get('tag_string_artist'):
-            caption += '\n<b>Artist:</b> ' + self.to_tags(post.tag_string_artist)
+            caption += '\n<b>Artist:</b> ' + self.to_telegram_tags(post.tag_string_artist)
         if settings.SHOW_CHARACTER_TAG and post.post.get('tag_string_character'):
-            caption += '\n<b>Characters:</b> ' + self.to_tags(post.tag_string_character)
+            caption += '\n<b>Characters:</b> ' + self.to_telegram_tags(post.tag_string_character)
 
         buttons = [
             [InlineKeyboardButton(text='View on Danbooru', url=post.link)]
