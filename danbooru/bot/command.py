@@ -80,20 +80,11 @@ class Command:
         if isinstance(tags, str):
             tags = map(str.strip, tags.split(' '))
         tag_string = ' '.join(map(lambda tag: f'#{tag}', tags))
-        return tag_string.translate(str.maketrans({
-            '-': r'_',
-            ']': r'_',
-            '[': r'_',
-            '\'': r'_',
-            '\\': r'_',
-            '/': r'_',
-            '^': r'_',
-            '$': r'_',
-            '*': r'_',
-            '.': r'_',
-            '(': r'_',
-            ')': r'_',
-        }))
+
+        escaped_chars = ['-', '~', ']', '[', '"', '\'', '\\', '/', '^', '$', '.', '(', ')', '!', ':', ';']
+        for char in escaped_chars:
+            tag_string = tag_string.replace(char, '_')
+        return tag_string
 
     def get_sauce_url(self, post: Post):
         if post.post.get('pixiv_id'):

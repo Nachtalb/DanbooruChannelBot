@@ -5,6 +5,7 @@ Changelog
 ------------------
 
 - Fix overlapping tags resulting in not MAX_TAGS tags shown
+- Refine escaped symbols in tags
 
 
 1.1.0 (2019-03-13)
