@@ -4,7 +4,7 @@ Changelog
 1.1.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Fix overlapping tags resulting in not MAX_TAGS tags shown
 
 
 1.1.0 (2019-03-13)

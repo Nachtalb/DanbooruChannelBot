@@ -102,12 +102,14 @@ class Command:
             return post.source
 
     def get_tags(self, available_tags: Collection[str]) -> Set[str]:
-        tags = settings.SHOWN_TAGS & set(available_tags)
+        available_tags = set(available_tags)
+        tags = settings.SHOWN_TAGS & available_tags
 
-        fill_amount = settings.MAX_TAGS - len(tags)
-        fill_amount = fill_amount if fill_amount <= len(available_tags) else len(available_tags)
+        default_amount = settings.MAX_TAGS - len(tags)
+        max_amount = len(available_tags - tags)
+        fill_amount = default_amount if max_amount >= default_amount else max_amount
 
-        return tags | set(sample(available_tags, k=fill_amount))
+        return tags | set(sample(available_tags - tags, k=fill_amount))
 
     def create_post(self, post: Post) -> Tuple[Callable, Dict]:
         tags = set(post.tag_string.split(' '))
