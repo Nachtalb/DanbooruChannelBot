@@ -1,8 +1,10 @@
 import logging
+import re
 from datetime import timedelta
 from pathlib import Path
 from random import sample
 from typing import Callable, Collection, Dict, List, Set, Tuple
+from urllib.parse import urlparse
 
 from emoji import emojize
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -120,7 +122,13 @@ class Command:
 
         source = self.get_sauce_url(post)
         if source:
-            buttons[0].append(InlineKeyboardButton(text=emojize(':globe_with_meridians:'), url=source))
+            source_emojis = {
+                'twitter.com': 'bird',
+                't.co': 'bird',
+                'pixiv.net': 'P_button',
+            }
+            emoji = source_emojis.get(re.sub('^www\\.', '', urlparse(source).netloc), 'globe_with_meridians')
+            buttons[0].append(InlineKeyboardButton(text=emojize(f':{emoji}:'), url=source))
 
         kwargs = {
             'chat_id': settings.CHAT_ID,
