@@ -148,6 +148,7 @@ class Command:
             kwargs['animation'] = post.file
             func = danbooru_bot.updater.bot.send_animation
         else:
+            kwargs['filename'] = f'{post.id}.{post.file_extension}'
             kwargs['document'] = post.file
             func = danbooru_bot.updater.bot.send_document
 
