@@ -39,9 +39,11 @@ class Post:
     def is_gif(self) -> bool:
         return self.file_extension in ['gif']
 
-    @property
-    def file(self) -> BytesIO:
-        if not self._file:
+    def prepare(self):
+        self._download_file()
+
+    def _download_file(self):
+        if self._file is None:
             counter = 0
             while True:
                 try:
@@ -56,12 +58,15 @@ class Post:
         return self._file
 
     @property
-    def file_extension(self) -> str or None:
-        if not self._fileext:
-            split = os.path.splitext(self.post['file_url'])
-            if len(split) != 2:
-                return
-            self._fileext = split[1].lstrip('.')
+    def file(self) -> BytesIO:
+        if self._file is None:
+            self._download_file()
+        return self._file
+
+    @property
+    def file_extension(self) -> str or none:
+        if self._fileext is None:
+            self._fileext = Path(self.file_url).suffix.replace('.', '')
         return self._fileext
 
     def _extract_zip(self, zip_file, output_dir):

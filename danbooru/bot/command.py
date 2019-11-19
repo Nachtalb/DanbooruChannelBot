@@ -160,6 +160,7 @@ class Command:
                 self.logger.info('Scheduled task was stopped while refreshing')
                 break
 
+            post.prepare()
             method, kwargs = self.create_post(post)
             try:
                 method(**kwargs)
