@@ -1,6 +1,10 @@
 import os
 from io import BytesIO
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from zipfile import ZipFile
 
+import cv2
 from requests.exceptions import ConnectionError
 
 from danbooru.bot.animedatabase_utils.base_service import BaseService
@@ -11,6 +15,7 @@ class Post:
         self.post = post
         self.service = service
         self._file = None
+        self._fileext = None
 
     def __getattr__(self, item):
         value = self.post.get(item)
@@ -41,6 +46,8 @@ class Post:
             while True:
                 try:
                     self._file = BytesIO(self.service.session.get(self.post['file_url']).content)
+                    if self.file_extension == 'zip':
+                        self._zip_to_video()
                     break
                 except ConnectionError as error:
                     counter += 1
@@ -50,7 +57,42 @@ class Post:
 
     @property
     def file_extension(self) -> str or None:
-        split = os.path.splitext(self.post['file_url'])
-        if len(split) != 2:
-            return
-        return split[1].lstrip('.')
+        if not self._fileext:
+            split = os.path.splitext(self.post['file_url'])
+            if len(split) != 2:
+                return
+            self._fileext = split[1].lstrip('.')
+        return self._fileext
+
+    def _extract_zip(self, zip_file, output_dir):
+        with ZipFile(zip_file) as zip_file:
+            zip_file.extractall(output_dir)
+
+    def _generate_mp4_from_frames(self, output_file, frames_dir, delay):
+        frames = sorted(map(lambda file: os.path.join(str(frames_dir), file), os.listdir(frames_dir)))
+        frames = list(map(cv2.imread, frames))
+
+        framerate = 1000 / delay
+
+        height, width, layers = frames[0].shape
+        video = cv2.VideoWriter(str(output_file), cv2.VideoWriter_fourcc(*'mp4v'), framerate, (width, height))
+
+        for frame in frames:
+            video.write(frame)
+
+        cv2.destroyAllWindows()
+        video.release()
+
+    def _zip_to_video(self):
+        with TemporaryDirectory() as dir:
+            temp_dir = Path(dir)
+            frames_dir = temp_dir / 'frames'
+            self._extract_zip(self.file, frames_dir)
+
+            video_file = temp_dir / 'out.mp4'
+            self._generate_mp4_from_frames(video_file, frames_dir, 40)
+
+            self._file = BytesIO()
+            self._file.write(video_file.read_bytes())
+            self._file.seek(0)
+            self._fileext = 'mp4'

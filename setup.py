@@ -22,6 +22,7 @@ setup(name='DanbooruChannelBot',
           'pybooru',
           'requests_html',
           'emoji',
+          'opencv-python',
       ],
 
       entry_points={
