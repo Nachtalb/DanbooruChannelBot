@@ -21,7 +21,7 @@ class Post:
         value = self.post.get(item)
         if value:
             return value
-        raise AttributeError
+        raise KeyError
 
     @property
     def link(self) -> str:
@@ -69,6 +69,12 @@ class Post:
             self._fileext = Path(self.file_url).suffix.replace('.', '')
         return self._fileext
 
+    def _get_delay(self):
+        try:
+            return self.pixiv_ugoira_frame_data['data'][0]['delay']
+        except KeyError:
+            return 50
+
     def _extract_zip(self, zip_file, output_dir):
         with ZipFile(zip_file) as zip_file:
             zip_file.extractall(output_dir)
@@ -95,7 +101,7 @@ class Post:
             self._extract_zip(self.file, frames_dir)
 
             video_file = temp_dir / 'out.mp4'
-            self._generate_mp4_from_frames(video_file, frames_dir, 40)
+            self._generate_mp4_from_frames(video_file, frames_dir, self._get_delay())
 
             self._file = BytesIO()
             self._file.write(video_file.read_bytes())
