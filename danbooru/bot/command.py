@@ -1,4 +1,5 @@
 import logging
+import json
 import re
 from datetime import timedelta
 from pathlib import Path
@@ -8,7 +9,7 @@ from urllib.parse import urlparse
 
 from emoji import emojize
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import run_async
+from telegram.ext import run_async, MessageHandler
 from telegram.parsemode import ParseMode
 
 from danbooru.bot import settings
@@ -34,6 +35,7 @@ class Command:
         danbooru_bot.add_command(name='refresh', func=self.refresh_command)
         danbooru_bot.add_command(name='start', func=self.start_command)
         danbooru_bot.add_command(name='stop', func=self.stop_command)
+        danbooru_bot.add_command(MessageHandler, func=self.id, filters=None)
 
     @property
     def last_post_id(self) -> int:
@@ -233,5 +235,21 @@ class Command:
             update.message.reply_text('Job scheduled for removal')
         self.stop_refresh(is_manual=manual)
 
+    @run_async
+    def id(self, bot: Bot = None, update: Update = None):
+        message = update.effective_message
+        if message.text != '/id':
+            return
+
+        info = {
+            'chat_id': message.chat.id,
+            'message_id': message.message_id,
+        }
+
+        user = message.from_user
+        if user:
+            info['user'] = f'@{user.username}' or f'{user.first_name} {user.last_name}'
+
+        message.reply_text(json.dumps(info, indent=2))
 
 command = Command()

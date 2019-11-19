@@ -5,7 +5,7 @@ from threading import Thread
 from typing import Callable, List, Type
 
 from telegram import Bot, Update, User
-from telegram.ext import CommandHandler, Filters, Handler, Updater, messagequeue
+from telegram.ext import CommandHandler, Filters, Handler, Updater, messagequeue, MessageHandler
 from telegram.utils.request import Request
 
 from .settings import ADMINS, LOG_LEVEL, MODE, TELEGRAM_API_TOKEN
@@ -82,6 +82,8 @@ class DanbooruBot:
 
         if isinstance(handler, Handler):
             self.updater.dispatcher.add_handler(handler=handler)
+        elif handler is MessageHandler:
+            self.updater.dispatcher.add_handler(handler(callback=func, **kwargs))
         else:
             self.updater.dispatcher.add_handler(handler=handler(name, func, **kwargs))
 
