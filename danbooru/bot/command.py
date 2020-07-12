@@ -54,6 +54,12 @@ class Command:
             file_.write(str(self._last_post_id))
 
     def is_ok(self, post: Post):
+        try:
+            if post.is_banned or post.is_deleted:
+                return False
+        except KeyError:
+            pass
+
         tags = set(post.tag_string.split(' '))
         white_list = set(filter(lambda tag: not tag.startswith('-'), settings.SEARCH_TAGS))
         black_list = set(map(lambda tag: tag.strip('-'), settings.SEARCH_TAGS - white_list))
@@ -188,7 +194,7 @@ class Command:
             return
 
         self.logger.info('Starting scheduled job')
-        self.job = danbooru_bot.updater.job_queue.run_repeating(self.refresh, interval=timedelta(minutes=5),
+        self.job = danbooru_bot.updater.job_queue.run_repeating(self.refresh, interval=timedelta(minutes=1),
                                                                 first=0, name='danbooru_refresh')
 
     def stop_refresh(self, is_manual: bool = False):
