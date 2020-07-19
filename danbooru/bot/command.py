@@ -148,6 +148,8 @@ class Command:
             caption += '\n<b>Artist:</b> ' + self.to_telegram_tags(post.tag_string_artist)
         if settings.SHOW_CHARACTER_TAG and post.post.get('tag_string_character'):
             caption += '\n<b>Characters:</b> ' + self.to_telegram_tags(post.tag_string_character)
+        if settings.SUFFIX:
+            caption += settings.SUFFIX
 
         buttons = [
             [InlineKeyboardButton(text=emojize(':package:'), url=post.link)]
