@@ -1,10 +1,12 @@
 import os
 from io import BytesIO
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from tempfile import TemporaryDirectory
 from zipfile import ZipFile
 
 import cv2
+import ffprobe
 from requests.exceptions import ConnectionError
 
 from danbooru.bot.animedatabase_utils.base_service import BaseService
@@ -15,7 +17,10 @@ class Post:
         self.post = post
         self.service = service
         self._file = None
+        self._thumbnail = None
         self._fileext = None
+        self.videos = None
+        self.audios = None
 
     def __getattr__(self, item):
         value = self.post.get(item)
@@ -39,8 +44,43 @@ class Post:
     def is_gif(self) -> bool:
         return self.file_extension in ['gif']
 
+    @property
+    def has_audio(self) -> bool:
+        return bool(self.audio)
+
+    @property
+    def video(self) -> ffprobe.ffprobe.FFStream:
+        self.prepare()
+        return next(iter(self.videos), None)
+
+    @property
+    def audio(self) -> ffprobe.ffprobe.FFStream:
+        self.prepare()
+        return next(iter(self.audios), None)
+
     def prepare(self):
         self._download_file()
+
+    def _get_video_probe(self) -> ffprobe.FFProbe:
+        with NamedTemporaryFile(mode='bw') as file:
+            file.write(self.file.read())
+            self.file.seek(0)
+            return ffprobe.FFProbe(file.name)
+
+    def _set_file_info(self):
+        probe = self._get_video_probe()
+        self.videos = probe.video
+        self.audios = probe.audio
+
+    def _download_thumbnail(self) -> BytesIO:
+        if self._thumbnail is None:
+            try:
+                self._thumbnail = BytesIO(self.service.session.get(self.post['preview_file_url']).content)
+            except Exception as e:
+                print(f'Error while downloading preview of {self.id}')
+                print(e)
+
+        return self._thumbnail
 
     def _download_file(self):
         if self._file is None:
@@ -55,7 +95,14 @@ class Post:
                     counter += 1
                     if counter == 3:
                         raise error
+        self._set_file_info()
         return self._file
+
+    @property
+    def thumbnail(self) -> BytesIO:
+        if self._thumbnail is None:
+            self._download_thumbnail()
+        return self._thumbnail
 
     @property
     def file(self) -> BytesIO:

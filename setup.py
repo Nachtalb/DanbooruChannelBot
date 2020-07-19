@@ -23,6 +23,7 @@ setup(name='DanbooruChannelBot',
           'requests_html',
           'emoji',
           'opencv-python',
+          'ffprobe-python',
       ],
 
       entry_points={
