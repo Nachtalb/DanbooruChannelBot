@@ -78,13 +78,15 @@ class Command:
         for post_id in range(self.last_post_id + 1, latest_post_id + 1):
             try:
                 post_dict = self.service.client.post_show(post_id)
-                post = Post(post_dict, self.service)
-                if not self.is_ok(post):
-                    continue
-                yield post
-            except Exception as error:
-                print(error)
-                pass
+            except Exception as e:
+                self.logger.warning(f'Exception during downloading info for post {post_id}')
+                self.logger.exception(e)
+                continue
+
+            post = Post(post_dict, self.service)
+            if not self.is_ok(post):
+                continue
+            yield post
 
     def _get_posts_by_search(self)
         posts = self.service.client.post_list(limit=100, tags=settings.SEARCH_TAGS)
@@ -92,14 +94,11 @@ class Command:
         for post_dict in reversed(posts):
             if self.last_post_id >= post_dict['id']:
                 continue
-            try:
-                post = Post(post_dict, self.service)
-                if not self.is_ok(post):
-                    continue
-                yield post
-            except Exception as error:
-                print(error)
-                pass
+
+            post = Post(post_dict, self.service)
+            if not self.is_ok(post):
+                continue
+            yield post
 
 
     def get_posts(self):
