@@ -14,8 +14,8 @@ SEARCH_TAGS = 'rating:safe'  # AND filter
 POST_TAG_FILTER = set()      # OR filter
 MAX_TAGS = 15
 SHOWN_TAGS = {  # Tags that will always be shown. Other tags will be selected randomly to reach MAX_TAGS
-    '1girl', '2girls', '3girls', '4girls', '5girls', '6+girls', 'highres', 'blue_eyes', 'blonde_hair',
-    'loli', 'shota', 'incest', 'yuri', 'yaoi', 'dark_skin', 'nipples',
+    '1girl', '2girls', '3girls', '4girls', '5girls', '6+girls', 'highres',
+    'blue_eyes', 'blonde_hair', 'yuri', 'nipples', 'pussy',
 }
 
 RELOAD_INTEVAL = 5  # in min
