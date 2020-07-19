@@ -18,6 +18,8 @@ SHOWN_TAGS = {  # Tags that will always be shown. Other tags will be selected ra
     'loli', 'shota', 'incest', 'yuri', 'yaoi', 'dark_skin', 'nipples',
 }
 
+RELOAD_INTEVAL = 5  # in min
+
 SERVICE = {
     'name': 'danbooru',
     'type': 'danbooru',
