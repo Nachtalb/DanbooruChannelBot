@@ -61,14 +61,14 @@ class Command:
             pass
 
         tags = set(post.tag_string.split(' '))
-        white_list = set(filter(lambda tag: not tag.startswith('-'), settings.SEARCH_TAGS))
-        black_list = set(map(lambda tag: tag.strip('-'), settings.SEARCH_TAGS - white_list))
+        white_list = set(filter(lambda tag: not tag.startswith('-'), settings.POST_TAG_FILTER))
+        black_list = set(map(lambda tag: tag.strip('-'), settings.POST_TAG_FILTER - white_list))
 
         if not tags & black_list and tags & white_list == white_list:
             return True
         return False
 
-    def get_posts(self):
+    def _get_posts_by_number_only(self):
         posts = self.service.client.post_list(limit=1)
         latest_post_id = posts[0]['id']
 
@@ -85,6 +85,28 @@ class Command:
             except Exception as error:
                 print(error)
                 pass
+
+    def _get_posts_by_search(self)
+        posts = self.service.client.post_list(limit=100, tags=settings.SEARCH_TAGS)
+
+        for post_dict in reversed(posts):
+            if self.last_post_id >= post_dict['id']:
+                continue
+            try:
+                post = Post(post_dict, self.service)
+                if not self.is_ok(post):
+                    continue
+                yield post
+            except Exception as error:
+                print(error)
+                pass
+
+
+    def get_posts(self):
+        if settings.SEARCH_TAGS:
+            yield from self._get_posts_by_search()
+        else:
+            yield from self._get_posts_by_number_only()
 
     def to_telegram_tags(self, tags: List[str] or str) -> str:
         if isinstance(tags, str):

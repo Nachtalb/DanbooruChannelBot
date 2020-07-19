@@ -8,8 +8,10 @@ CHAT_ID = -0
 AUTO_START = False
 SHOW_CHARACTER_TAG = True
 SHOW_ARTIST_TAG = True
+SHOW_ID = True
 
-SEARCH_TAGS = set()
+SEARCH_TAGS = 'rating:safe'  # AND filter
+POST_TAG_FILTER = set()      # OR filter
 MAX_TAGS = 15
 SHOWN_TAGS = {  # Tags that will always be shown. Other tags will be selected randomly to reach MAX_TAGS
     '1girl', '2girls', '3girls', '4girls', '5girls', '6+girls', 'highres', 'blue_eyes', 'blonde_hair',
