@@ -70,6 +70,8 @@ class Command:
 
     def _get_posts_by_number_only(self):
         posts = self.service.client.post_list(limit=1)
+        id_post_map = dict(map(lambda post: (post['id'], post), posts))
+
         latest_post_id = posts[0]['id']
 
         if self.last_post_id == latest_post_id:
@@ -77,7 +79,7 @@ class Command:
 
         for post_id in range(self.last_post_id + 1, latest_post_id + 1):
             try:
-                post_dict = self.service.client.post_show(post_id)
+                post_dict = id_post_map.get(post_id, self.service.client.post_show(post_id))
             except Exception as e:
                 self.logger.warning(f'Exception during downloading info for post {post_id}')
                 self.logger.exception(e)
