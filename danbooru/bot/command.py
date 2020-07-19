@@ -90,7 +90,7 @@ class Command:
                 continue
             yield post
 
-    def _get_posts_by_search(self)
+    def _get_posts_by_search(self):
         posts = self.service.client.post_list(limit=100, tags=settings.SEARCH_TAGS)
 
         for post_dict in reversed(posts):
