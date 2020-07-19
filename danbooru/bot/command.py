@@ -117,8 +117,10 @@ class Command:
         tags = self.get_tags(tags)
         caption = ''
 
+        if settings.SHOW_ID:
+            caption += '<b>ID:</b> ' + str(post.id)
         if tags:
-            caption = '<b>Tags:</b> ' + self.to_telegram_tags(tags)
+            caption += '\n<b>Tags:</b> ' + self.to_telegram_tags(tags)
         if settings.SHOW_ARTIST_TAG and post.post.get('tag_string_artist'):
             caption += '\n<b>Artist:</b> ' + self.to_telegram_tags(post.tag_string_artist)
         if settings.SHOW_CHARACTER_TAG and post.post.get('tag_string_character'):
