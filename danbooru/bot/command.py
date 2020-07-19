@@ -147,15 +147,32 @@ class Command:
             'parse_mode': ParseMode.HTML,
         }
         if post.is_image:
+            self.logger.info('Send photo [%d]', post.id)
             kwargs['photo'] = post.file
             func = danbooru_bot.updater.bot.send_photo
-        elif post.file_extension == 'mp4':
-            kwargs['video'] = post.file
-            func = danbooru_bot.updater.bot.send_video
-        elif post.is_gif:
-            kwargs['animation'] = post.file
+        elif post.is_gif or (post.file_extension == 'mp4' and not post.has_audio):
+            self.logger.info('Send gif [%d]', post.id)
+            kwargs.update({
+                'animation': post.file,
+                'duration': post.video.duration if post.video else None,
+                'height': post.image_height,
+                'width': post.image_width,
+                'thumb': post.thumbnail,
+            })
             func = danbooru_bot.updater.bot.send_animation
+        elif post.file_extension == 'mp4':
+            self.logger.info('Send video [%d]', post.id)
+            kwargs['video'] = post.file
+            kwargs.update({
+                'video': post.file,
+                'duration': post.video.duration,
+                'height': post.image_height,
+                'width': post.image_width,
+                'supports_streaming ': True,
+            })
+            func = danbooru_bot.updater.bot.send_video
         else:
+            self.logger.info('Send document [%d] - %s', post.id, post.file_extension)
             kwargs['filename'] = f'{post.id}.{post.file_extension}'
             kwargs['document'] = post.file
             func = danbooru_bot.updater.bot.send_document
