@@ -26,8 +26,7 @@ RUN \
   pip uninstall setuptools -y && \
   ln -s production.cfg buildout.cfg && \
   python3 bootstrap.py && \
-  bin/buildout && \
-  cp danbooru/bot/settings.example.py danbooru/bot/settings.py
+  bin/buildout
 RUN \
  echo "**** cleanup ****" && \
  apt clean -y && \
@@ -38,4 +37,4 @@ RUN \
    /root/.cache
 
 CMD bin/bot
-# EXPOSE 5000
+EXPOSE 5050
