@@ -1,7 +1,13 @@
 FROM python:3.8.4-buster
 
+ARG BUILD_DATE
+ARG VERSION
+ARG BOT_VERSION
+LABEL build_version="Version:- ${VERSION} Build-date:- ${BUILD_DATE}"
 LABEL maintainer="Nachtalb"
-ARG CACHEBUST=1
+
+ARG DEBIAN_FRONTEND="noninteractive"
+ENV PYTHONIOENCODING=utf-8
 
 WORKDIR /bot
 COPY docker/ /root/

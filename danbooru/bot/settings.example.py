@@ -43,7 +43,6 @@ RELOAD_INTEVAL = int(env('RELOAD_INTEVAL', 5))  # in min
 
 SERVICE = {
     'name': 'danbooru',
-    'type': 'danbooru',
     'url': 'https://danbooru.donmai.us',
     'api': env('DANBOORU_API'),
     'username': env('DANBOORU_USERNAME'),
@@ -52,7 +51,6 @@ SERVICE = {
 
 # {
 #     'name': 'safebooru',
-#     'type': 'danbooru',
 #     'url': 'https://safebooru.donmai.us',
 #     'api': None,
 #     'username': None,
