@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 from emoji import emojize
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import run_async, MessageHandler
+from telegram.files.inputfile import InputFile
 from telegram.parsemode import ParseMode
 
 from danbooru.bot import settings
@@ -171,14 +172,15 @@ class Command:
             'reply_markup': InlineKeyboardMarkup(buttons),
             'parse_mode': ParseMode.HTML,
         }
+        file = InputFile(post.file, filename=f'{post.id}.{post.file_extension}')
         if post.is_image:
             self.logger.info('Send photo [%d]', post.id)
-            kwargs['photo'] = post.file
+            kwargs['photo'] = file
             func = danbooru_bot.updater.bot.send_photo
         elif post.is_gif or (post.file_extension == 'mp4' and not post.has_audio):
             self.logger.info('Send gif [%d]', post.id)
             kwargs.update({
-                'animation': post.file,
+                'animation': file,
                 'duration': post.video.duration if post.video else None,
                 'height': post.image_height,
                 'width': post.image_width,
@@ -187,9 +189,8 @@ class Command:
             func = danbooru_bot.updater.bot.send_animation
         elif post.file_extension == 'mp4':
             self.logger.info('Send video [%d]', post.id)
-            kwargs['video'] = post.file
             kwargs.update({
-                'video': post.file,
+                'video': file,
                 'duration': post.video.duration,
                 'height': post.image_height,
                 'width': post.image_width,
@@ -198,8 +199,7 @@ class Command:
             func = danbooru_bot.updater.bot.send_video
         else:
             self.logger.info('Send document [%d] - %s', post.id, post.file_extension)
-            kwargs['filename'] = f'{post.id}.{post.file_extension}'
-            kwargs['document'] = post.file
+            kwargs['document'] = file
             func = danbooru_bot.updater.bot.send_document
 
         return func, kwargs
