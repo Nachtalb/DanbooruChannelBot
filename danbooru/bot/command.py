@@ -48,8 +48,8 @@ class Command:
                 if latest_post is None:
                     raise ValueError('You have to set a post id in the last_post.txt')
                 else:
-                    self._last_post_id = latest_post_id['id']
-                    self.last_post_file.write_text(self._last_post_id)
+                    self._last_post_id = latest_post['id']
+                    self.last_post_file.write_text(str(self._last_post_id))
         return self._last_post_id
 
     @last_post_id.setter

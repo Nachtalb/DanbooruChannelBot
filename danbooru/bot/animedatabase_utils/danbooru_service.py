@@ -62,8 +62,8 @@ class DanbooruService(BaseService):
             self.url = self.client.site_url.lstrip('/')
 
     def init_session(self):
+        self.session = HTMLSession()
         if self.username and self.password and self.url:
-            self.session = HTMLSession()
             login_page = self.session.get(f'{self.url.lstrip("/")}/session/new')
             form = login_page.html.find('.simple_form')[0]
 
