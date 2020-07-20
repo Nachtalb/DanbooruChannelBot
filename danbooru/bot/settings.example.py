@@ -76,4 +76,7 @@ else:
         'active': 'polling',
     }
 
-LOG_LEVEL = logging.DEBUG
+if env('DEBUG', False):
+    LOG_LEVEL = logging.DEBUG
+else:
+    LOG_LEVEL = logging.INFO
