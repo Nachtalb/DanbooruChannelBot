@@ -1,6 +1,11 @@
 import logging
 import os
 
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
 
 def env(name, default=None, required=False, is_bool=False, is_list=False):
     value = os.environ.get(name)
@@ -26,7 +31,7 @@ CHAT_ID = int(env('CHAT_ID', required=True))
 
 SUFFIX = env('SUFFIX', '')
 
-AUTO_START = env('AUTO', True)
+AUTO_START = env('AUTO_START', True)
 SHOW_CHARACTER_TAG = env('SHOW_CHARACTER_TAG', True)
 SHOW_ARTIST_TAG = env('SHOW_ARTIST_TAG', True)
 SHOW_ID = env('SHOW_ID', True)
@@ -62,11 +67,12 @@ SERVICE = {
 # https://github.com/python-telegram-bot/python-telegram-bot/wiki/Webhooks
 if env('WEBHOOK', True):
     DOMAIN = env('DOMAIN', required=True)
+    PORT = int(env('PORT', 5050))
     MODE = {
         'active': 'webhook',  # "webook" or "polling"
         'configuration': {
             'listen': '127.0.0.1',
-            'port': 5000,
+            'port': PORT,
             'url_path': TELEGRAM_API_TOKEN,
             'url': 'https://%s/%s' % (DOMAIN, TELEGRAM_API_TOKEN),
         },
