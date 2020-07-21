@@ -19,9 +19,35 @@ from danbooru.bot.animedatabase_utils.post import Post
 from danbooru.bot.bot import danbooru_bot
 
 
+class Tracker(list):
+    _tracker_file = Path('tracker.txt')
+
+    def __init__(self):
+        self._tracker_file.touch(exist_ok=True)
+        content = self._tracker_file.read_text()
+        ids = map(int, content.strip().split())
+        super(Tracker, self).__init__(ids)
+
+    def not_implemnted(self):
+        raise NotImplementedError
+
+    clear = remove = insert = pop = not_implemnted
+
+    def append(self, item):
+        self.extend([item])
+
+    def extend(self, items):
+        super(Tracker, self).extend(items)
+        if len(self) > 100:
+            items = self[len(self) - 100:]
+            super(Tracker, self).__init__(items)
+        self._tracker_file.write_text(' '.join(map(str, self)))
+
+
 class Command:
     is_refreshing = False
     is_manual_refresh = False
+    tracker = Tracker()
 
     def __init__(self):
         self.service = DanbooruService(**settings.SERVICE)
@@ -102,14 +128,15 @@ class Command:
         posts = self.service.client.post_list(limit=100, tags=settings.SEARCH_TAGS)
 
         for post_dict in reversed(posts):
-            if not 'id' in post_dict or self.last_post_id >= post_dict['id']:
+            if ('id' not in post_dict
+                or (not settings.LAST_100_TRACK and self.last_post_id >= post_dict['id'])
+                or (settings.LAST_100_TRACK and post_dict['id'] in self.tracker)):
                 continue
 
             post = Post(post_dict, self.service)
             if not self.is_ok(post):
                 continue
             yield post
-
 
     def get_posts(self):
         if settings.SEARCH_TAGS:
@@ -226,6 +253,8 @@ class Command:
                 pass
             finally:
                 self.last_post_id = post.id
+                if settings.LAST_100_TRACK:
+                    self.tracker.append(post.id)
         self.is_refreshing = False
 
     def refresh(self, *args, is_manual: bool = False):

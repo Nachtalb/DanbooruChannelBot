@@ -41,6 +41,8 @@ SHOWN_TAGS = env('SHOWN_TAGS', {  # Tags that will always be shown. Other tags w
     'blue_eyes', 'blonde_hair', 'yuri'
 })
 
+LAST_100_TRACK = env('LAST_100_TRACK', False)  # Track last 100 posts base on SEARCH_TAGS to recognize edited posts that newly match your criteria
+
 RELOAD_INTEVAL = int(env('RELOAD_INTEVAL', 5))  # in min
 
 SERVICE = {
