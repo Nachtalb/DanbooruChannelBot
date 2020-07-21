@@ -10,7 +10,7 @@ def env(name, default=None, required=False, is_bool=False, is_list=False):
         raise KeyError(f'You need to define the environmental variable "{name}"')
     elif is_list or isinstance(default, (list, set, tuple)):
         convert = type(default) if default is not None else list
-        if value is None:
+        if not value:
             return convert() if default is None else default
         return convert(map(str.strip, value.split(',')))
     elif is_bool or isinstance(default, bool):
