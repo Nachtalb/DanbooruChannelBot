@@ -186,24 +186,28 @@ class Command:
         if settings.SUFFIX:
             caption += settings.SUFFIX
 
-        buttons = [
-            [InlineKeyboardButton(text=emojize(':package:'), url=post.link)]
-        ]
+        buttons = None
+        if settings.SHOW_BUTTONS:
+            buttons = [
+                [InlineKeyboardButton(text=emojize(':package:'), url=post.link)]
+            ]
 
-        source = self.get_sauce_url(post)
-        if source:
-            source_emojis = {
-                'twitter.com': 'bird',
-                't.co': 'bird',
-                'pixiv.net': 'P_button',
-            }
-            emoji = source_emojis.get(re.sub('^www\\.', '', urlparse(source).netloc), 'globe_with_meridians')
-            buttons[0].append(InlineKeyboardButton(text=emojize(f':{emoji}:'), url=source))
+            source = self.get_sauce_url(post)
+            if source:
+                source_emojis = {
+                    'twitter.com': 'bird',
+                    't.co': 'bird',
+                    'pixiv.net': 'P_button',
+                }
+                emoji = source_emojis.get(re.sub('^www\\.', '', urlparse(source).netloc), 'globe_with_meridians')
+                buttons[0].append(InlineKeyboardButton(text=emojize(f':{emoji}:'), url=source))
+
+            buttons = InlineKeyboardMarkup(buttons)
 
         kwargs = {
             'chat_id': settings.CHAT_ID,
             'caption': caption,
-            'reply_markup': InlineKeyboardMarkup(buttons),
+            'reply_markup': buttons,
             'parse_mode': ParseMode.HTML,
         }
         file = InputFile(post.file, filename=f'{post.id}.{post.file_extension}')

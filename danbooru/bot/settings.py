@@ -32,6 +32,7 @@ AUTO_START = env('AUTO_START', True)
 SHOW_CHARACTER_TAG = env('SHOW_CHARACTER_TAG', True)
 SHOW_ARTIST_TAG = env('SHOW_ARTIST_TAG', True)
 SHOW_ID = env('SHOW_ID', True)
+SHOW_BUTTONS = env('SHOW_BUTTONS', True)
 
 SEARCH_TAGS = env('SEARCH_TAGS', 'rating:safe') # AND filter
 POST_TAG_FILTER = env('POST_TAG_FILTER', set()) # OR filter
