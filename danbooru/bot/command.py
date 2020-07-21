@@ -42,10 +42,14 @@ class Command:
     def last_post_id(self) -> int:
         if not self._last_post_id:
             try:
-                with open(self.last_post_file) as file_:
-                    self._last_post_id = int(file_.read().strip())
+                self._last_post_id = int(self.last_post_file.read_text().strip())
             except FileNotFoundError:
-                raise ValueError('You have to set a post id in the last_post.txt')
+                latest_post = next(iter(self.service.client.post_list(limit=1)), None)
+                if latest_post is None:
+                    raise ValueError('You have to set a post id in the last_post.txt')
+                else:
+                    self._last_post_id = latest_post['id']
+                    self.last_post_file.write_text(str(self._last_post_id))
         return self._last_post_id
 
     @last_post_id.setter

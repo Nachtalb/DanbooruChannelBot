@@ -24,6 +24,7 @@ setup(name='DanbooruChannelBot',
           'emoji',
           'opencv-python',
           'ffprobe-python',
+          'python-dotenv',
       ],
 
       entry_points={
