@@ -176,7 +176,7 @@ class Command:
         caption = ''
 
         if settings.SHOW_DATE:
-            caption += '\nPosted at: %s' % datetime.fromisoformat(post.created_at).strftime(settings.DATE_FORMAT)
+            caption += '\n<b>Posted at:</b> %s' % datetime.fromisoformat(post.created_at).strftime(settings.DATE_FORMAT)
         if settings.SHOW_ID:
             caption += '\n<b>ID:</b> ' + str(post.id)
         if tags:
