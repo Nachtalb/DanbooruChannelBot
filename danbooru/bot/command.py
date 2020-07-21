@@ -1,7 +1,7 @@
 import logging
 import json
 import re
-from datetime import timedelta
+from datetime import timedelta, datetime
 from pathlib import Path
 from random import sample
 from typing import Callable, Collection, Dict, List, Set, Tuple
@@ -175,8 +175,10 @@ class Command:
         tags = self.get_tags(tags)
         caption = ''
 
+        if settings.SHOW_DATE:
+            caption += '\nPosted at: %s' % datetime.fromisoformat(post.created_at).strftime(settings.DATE_FORMAT)
         if settings.SHOW_ID:
-            caption += '<b>ID:</b> ' + str(post.id)
+            caption += '\n<b>ID:</b> ' + str(post.id)
         if tags:
             caption += '\n<b>Tags:</b> ' + self.to_telegram_tags(tags)
         if settings.SHOW_ARTIST_TAG and post.post.get('tag_string_artist'):

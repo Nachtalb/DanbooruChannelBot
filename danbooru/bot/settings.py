@@ -33,6 +33,8 @@ SHOW_CHARACTER_TAG = env('SHOW_CHARACTER_TAG', True)
 SHOW_ARTIST_TAG = env('SHOW_ARTIST_TAG', True)
 SHOW_ID = env('SHOW_ID', True)
 SHOW_BUTTONS = env('SHOW_BUTTONS', True)
+SHOW_DATE = env('SHOW_DATE', True)
+DATE_FORMAT = env('DATE_FORMAT', '%b %-d \'%y at %H:%M')  # Date like "Apr 4 '20 at 14:08"
 
 SEARCH_TAGS = env('SEARCH_TAGS', 'rating:safe') # AND filter
 POST_TAG_FILTER = env('POST_TAG_FILTER', set()) # OR filter
