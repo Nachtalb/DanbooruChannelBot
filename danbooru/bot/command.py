@@ -114,6 +114,9 @@ class Command:
         for post_id in range(self.last_post_id + 1, latest_post_id + 1):
             try:
                 post_dict = id_post_map.get(post_id, self.service.client.post_show(post_id))
+                if 'id' not in post_dict:
+                    self.logger.warning('Skip restricted post')
+                    continue
             except Exception as e:
                 self.logger.warning(f'Exception during downloading info for post {post_id}')
                 self.logger.exception(e)
@@ -128,8 +131,10 @@ class Command:
         posts = self.service.client.post_list(limit=100, tags=settings.SEARCH_TAGS)
 
         for post_dict in reversed(posts):
-            if ('id' not in post_dict
-                or (not settings.LAST_100_TRACK and self.last_post_id >= post_dict['id'])
+            if 'id' not in post_dict:
+                self.logger.warning('Skip restricted post')
+                continue
+            if ((not settings.LAST_100_TRACK and self.last_post_id >= post_dict['id'])
                 or (settings.LAST_100_TRACK and post_dict['id'] in self.tracker)):
                 continue
 
