@@ -2,10 +2,7 @@ import logging
 import os
 
 from dotenv import load_dotenv
-
-
-load_dotenv()
-
+load_dotenv('.env')
 
 def env(name, default=None, required=False, is_bool=False, is_list=False):
     value = os.environ.get(name)

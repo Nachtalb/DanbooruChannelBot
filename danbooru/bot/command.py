@@ -75,12 +75,15 @@ class Command:
 
     def _get_posts_by_number_only(self):
         posts = self.service.client.post_list(limit=1)
+        if not posts:
+            return
+
         id_post_map = dict(map(lambda post: (post['id'], post), posts))
 
         latest_post_id = posts[0]['id']
 
         if self.last_post_id == latest_post_id:
-            return []
+            return
 
         for post_id in range(self.last_post_id + 1, latest_post_id + 1):
             try:
@@ -99,7 +102,7 @@ class Command:
         posts = self.service.client.post_list(limit=100, tags=settings.SEARCH_TAGS)
 
         for post_dict in reversed(posts):
-            if self.last_post_id >= post_dict['id']:
+            if not 'id' in post_dict or self.last_post_id >= post_dict['id']:
                 continue
 
             post = Post(post_dict, self.service)
