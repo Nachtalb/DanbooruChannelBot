@@ -25,6 +25,9 @@ class Tracker(list):
 
     def __init__(self):
         self._tracker_file.touch(exist_ok=True)
+        self.load()
+
+    def load(self):
         content = self._tracker_file.read_text()
         ids = map(int, content.strip().split())
         super(Tracker, self).__init__(ids)
@@ -130,6 +133,9 @@ class Command:
 
     def _get_posts_by_search(self):
         posts = self.service.client.post_list(limit=100, tags=settings.SEARCH_TAGS)
+        # FIXME: The tracker doesn't seem to be transported over the threads very well by
+        # timeout_decorator thus we have to load it again
+        self.tracker.load()
 
         for post_dict in reversed(posts):
             if 'id' not in post_dict:
