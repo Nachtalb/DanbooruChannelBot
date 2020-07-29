@@ -17,14 +17,15 @@ setup(name='DanbooruChannelBot',
       zip_safe=False,
 
       install_requires=[
-          'mr.developer',
-          'python-telegram-bot',
-          'pybooru',
-          'requests_html',
           'emoji',
-          'opencv-python',
           'ffprobe-python',
+          'mr.developer',
+          'opencv-python',
+          'pybooru',
           'python-dotenv',
+          'python-telegram-bot',
+          'requests_html',
+          'timeout-decorator',
       ],
 
       entry_points={

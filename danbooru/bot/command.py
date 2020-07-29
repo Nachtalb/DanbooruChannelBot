@@ -12,6 +12,7 @@ from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import run_async, MessageHandler
 from telegram.files.inputfile import InputFile
 from telegram.parsemode import ParseMode
+from timeout_decorator import timeout, TimeoutError
 
 from danbooru.bot import settings
 from danbooru.bot.animedatabase_utils.danbooru_service import DanbooruService
@@ -249,6 +250,7 @@ class Command:
 
         return func, kwargs
 
+    @timeout(300, use_signals=False)
     def send_posts(self, posts):
         self.is_refreshing = True
         for post in posts:
@@ -277,7 +279,12 @@ class Command:
             self.is_manual_refresh = True
 
         self.logger.info('Start refresh')
-        self.send_posts(self.get_posts())
+        try:
+            self.send_posts(self.get_posts())
+        except TimeoutError:
+            self.logger.info('Refresh took too long and was aborted')
+        finally:
+            self.is_refreshing = False
         self.logger.info('Finished refresh')
 
     def start_scheduler(self):
