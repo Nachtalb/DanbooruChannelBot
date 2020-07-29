@@ -17,15 +17,15 @@ setup(name='DanbooruChannelBot',
       zip_safe=False,
 
       install_requires=[
-          'emoji',
-          'ffprobe-python',
           'mr.developer',
-          'opencv-python',
-          'pybooru',
-          'python-dotenv',
           'python-telegram-bot',
+          'pybooru',
           'requests_html',
+          'emoji',
+          'opencv-python',
+          'ffprobe-python',
           'timeout-decorator',
+          'python-dotenv',
       ],
 
       entry_points={
