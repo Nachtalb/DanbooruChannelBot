@@ -298,7 +298,7 @@ class Command:
             return
 
         self.logger.info('Starting scheduled job')
-        self.job = danbooru_bot.updater.job_queue.run_repeating(self.refresh, interval=timedelta(minutes=1),
+        self.job = danbooru_bot.updater.job_queue.run_repeating(self.refresh, interval=timedelta(minutes=settings.RELOAD_INTEVAL),
                                                                 first=0, name='danbooru_refresh')
 
     def stop_refresh(self, is_manual: bool = False):
