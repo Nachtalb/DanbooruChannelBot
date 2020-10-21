@@ -41,7 +41,7 @@ POST_TAG_FILTER = env('POST_TAG_FILTER', set()) # OR filter
 MAX_TAGS = int(env('MAX_TAGS', 15))
 SHOWN_TAGS = env('SHOWN_TAGS', {  # Tags that will always be shown. Other tags will be selected randomly to reach MAX_TAGS
     '1girl', '2girls', '3girls', '4girls', '5girls', '6+girls', 'highres',
-    'blue_eyes', 'blonde_hair', 'yuri', 'hololive',
+    'blue_eyes', 'blonde_hair', 'yuri', 'hololive', 'animated',
 })
 
 LAST_100_TRACK = env('LAST_100_TRACK', False)  # Track last 100 posts base on SEARCH_TAGS to recognize edited posts that newly match your criteria
