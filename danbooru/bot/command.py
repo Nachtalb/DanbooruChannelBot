@@ -184,6 +184,8 @@ class Command:
 
     def create_post(self, post: Post) -> Tuple[Callable, Dict]:
         tags = set(post.tag_string.split(' '))
+        if settings.SHOW_ARTIST_TAG:
+            tags = tags - set([post.post.get('tag_string_artist')])
         tags = self.get_tags(tags)
         caption = ''
 
