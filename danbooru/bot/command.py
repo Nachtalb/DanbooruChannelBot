@@ -2,11 +2,13 @@ import logging
 import json
 import re
 from datetime import timedelta, datetime
+from io import BytesIO
 from pathlib import Path
 from random import sample
 from typing import Callable, Collection, Dict, List, Set, Tuple
 from urllib.parse import urlparse
 
+from PIL import Image
 from emoji import emojize
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import run_async, MessageHandler
@@ -228,6 +230,16 @@ class Command:
         }
         file = InputFile(post.file, filename=f'{post.id}.{post.file_extension}')
         if post.is_image:
+            if post.file_size > 10000000:
+                self.logger.info(f'Resizing photo [{post.id}]')
+                image = Image.open(post.file)
+                resized_image = image.resize((image.width // 2, image.height // 2))
+                with BytesIO() as out:
+                    resized_image.save(out, format='PNG')
+                    out.seek(0)
+                    file = InputFile(out, filename=f'{post.id}.png')
+                image.close()
+                resized_image.close()
             self.logger.info('Send photo [%d]', post.id)
             kwargs['photo'] = file
             func = danbooru_bot.updater.bot.send_photo
@@ -270,8 +282,8 @@ class Command:
             method, kwargs = self.create_post(post)
             try:
                 method(**kwargs)
-            except:
-                pass
+            except Exception as e:
+                self.logger.exception(e)
             finally:
                 self.last_post_id = post.id
                 if settings.LAST_100_TRACK:

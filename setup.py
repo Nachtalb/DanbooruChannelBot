@@ -26,6 +26,7 @@ setup(name='DanbooruChannelBot',
           'ffprobe-python',
           'timeout-decorator',
           'python-dotenv',
+          'Pillow',
       ],
 
       entry_points={
