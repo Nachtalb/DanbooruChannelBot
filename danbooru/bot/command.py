@@ -281,7 +281,7 @@ class Command:
             post.prepare()
             method, kwargs = self.create_post(post)
             try:
-                method(**kwargs)
+                method(**kwargs, timeout=300)
             except Exception as e:
                 self.logger.exception(e)
             finally:
