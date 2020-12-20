@@ -159,14 +159,11 @@ class Command:
             yield from self._get_posts_by_number_only()
 
     def to_telegram_tags(self, tags: List[str] or str) -> str:
-        if isinstance(tags, str):
-            tags = map(str.strip, tags.split(' '))
-        tag_string = ' '.join(map(lambda tag: f'#{tag}', tags))
+        if not isinstance(tags, str):
+            tags = ' '.join(tags)
 
-        escaped_chars = ['-', '~', ']', '[', '"', '\'', '\\', '/', '^', '$', '.', '(', ')', '!', ':', ';']
-        for char in escaped_chars:
-            tag_string = tag_string.replace(char, '_')
-        return tag_string
+        tags = re.sub('[^_a-zA-Z0-9\s]', '', tags)
+        return '#' + re.sub(' ', ' #', tags)
 
     def get_sauce_url(self, post: Post):
         if post.post.get('pixiv_id'):
@@ -187,7 +184,10 @@ class Command:
     def create_post(self, post: Post) -> Tuple[Callable, Dict]:
         tags = set(post.tag_string.split(' '))
         if settings.SHOW_ARTIST_TAG:
-            tags = tags - set([post.post.get('tag_string_artist')])
+            tags = tags - set([post.post.get('tag_string_artist', [])])
+        if settings.SHOW_CHARACTER_TAG:
+            tags = tags - set(post.post.get('tag_string_character', []))
+
         tags = self.get_tags(tags)
         caption = ''
 
