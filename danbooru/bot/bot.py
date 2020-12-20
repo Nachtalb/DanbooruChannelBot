@@ -31,9 +31,27 @@ class MQBot(Bot):
 
     @messagequeue.queuedmessage
     def send_message(self, *args, **kwargs):
-        """Wrapped method would accept new `queued` and `isgroup`
-        OPTIONAL arguments"""
-        return super(MQBot, self).send_message(*args, **kwargs)
+        return super(MQBot, self).send_message(*args, isgroup=True, **kwargs)
+
+    @messagequeue.queuedmessage
+    def send_photo(self, *args, **kwargs):
+        print('queued send_photo')
+        return super(MQBot, self).send_photo(*args, isgroup=True, **kwargs)
+
+    @messagequeue.queuedmessage
+    def send_animation(self, *args, **kwargs):
+        print('queued send_animatin')
+        return super(MQBot, self).send_animation(*args, isgroup=True, **kwargs)
+
+    @messagequeue.queuedmessage
+    def send_video(self, *args, **kwargs):
+        print('queued send_video')
+        return super(MQBot, self).send_video(*args, isgroup=True, **kwargs)
+
+    @messagequeue.queuedmessage
+    def send_document(self, *args, **kwargs):
+        print('queued send_document')
+        return super(MQBot, self).send_document(*args, isgroup=True, **kwargs)
 
 
 class DanbooruBot:
@@ -47,7 +65,7 @@ class DanbooruBot:
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def start(self):
-        queue = messagequeue.MessageQueue(all_burst_limit=29, all_time_limit_ms=1017)
+        queue = messagequeue.MessageQueue(all_burst_limit=2, all_time_limit_ms=6000)
         request = Request(con_pool_size=8)
         bot = MQBot(self.token, request=request, mqueue=queue)
 

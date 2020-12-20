@@ -270,7 +270,7 @@ class Command:
 
         return func, kwargs
 
-    @timeout(300, use_signals=False)
+    # @timeout(300, use_signals=False)
     def send_posts(self, posts):
         self.is_refreshing = True
         for post in posts:
