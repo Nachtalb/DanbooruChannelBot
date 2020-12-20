@@ -230,10 +230,13 @@ class Command:
         }
         file = InputFile(post.file, filename=f'{post.id}.{post.file_extension}')
         if post.is_image:
-            if post.file_size > 10000000:
+            width, height = post.image_width, post.image_height
+            if post.file_size > 10000000 or width + height > 10000:
                 self.logger.info(f'Resizing photo [{post.id}]')
                 image = Image.open(post.file)
-                resized_image = image.resize((image.width // 2, image.height // 2))
+                while width + height > 10000:
+                    width, height = width // 2, height // 2
+                resized_image = image.resize((width, height))
                 with BytesIO() as out:
                     resized_image.save(out, format='PNG')
                     out.seek(0)
