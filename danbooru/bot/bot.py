@@ -1,11 +1,20 @@
 import logging
+import types
 import os
 import sys
 from threading import Thread
-from typing import Callable, List, Type
+from typing import Callable, Type
 
 from telegram import Bot, Update, User
-from telegram.ext import CommandHandler, Filters, Handler, Updater, messagequeue, MessageHandler
+from telegram.ext import (
+    CallbackContext,
+    CommandHandler,
+    Filters,
+    Handler,
+    MessageHandler,
+    Updater,
+    messagequeue,
+)
 from telegram.utils.request import Request
 
 from .settings import ADMINS, LOG_LEVEL, MODE, TELEGRAM_API_TOKEN
@@ -13,10 +22,18 @@ from .settings import ADMINS, LOG_LEVEL, MODE, TELEGRAM_API_TOKEN
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=LOG_LEVEL)
 
 
+def decorate_all_senders(cls):
+    for attr in dir(cls):
+        if attr.startswith('send_') and isinstance(method := getattr(cls, attr), types.FunctionType):
+            setattr(cls, attr, messagequeue.queuedmessage(method))
+    return cls
+
+
+@decorate_all_senders
 class MQBot(Bot):
     """subclass of Bot which delegates send method handling to MQ"""
 
-    def __init__(self, *args, is_queued_def=True, mqueue=None, **kwargs):
+    def __init__(self, *args, is_queued_def=False, mqueue=None, **kwargs):
         super(MQBot, self).__init__(*args, **kwargs)
         # below 2 attributes should be provided for decorator usage
         self._is_messages_queued_default = is_queued_def
@@ -27,41 +44,16 @@ class MQBot(Bot):
             self._msg_queue.stop()
         except:
             pass
-        super(MQBot, self).__del__()
-
-    @messagequeue.queuedmessage
-    def send_message(self, *args, **kwargs):
-        return super(MQBot, self).send_message(*args, isgroup=True, **kwargs)
-
-    @messagequeue.queuedmessage
-    def send_photo(self, *args, **kwargs):
-        print('queued send_photo')
-        return super(MQBot, self).send_photo(*args, isgroup=True, **kwargs)
-
-    @messagequeue.queuedmessage
-    def send_animation(self, *args, **kwargs):
-        print('queued send_animatin')
-        return super(MQBot, self).send_animation(*args, isgroup=True, **kwargs)
-
-    @messagequeue.queuedmessage
-    def send_video(self, *args, **kwargs):
-        print('queued send_video')
-        return super(MQBot, self).send_video(*args, isgroup=True, **kwargs)
-
-    @messagequeue.queuedmessage
-    def send_document(self, *args, **kwargs):
-        print('queued send_document')
-        return super(MQBot, self).send_document(*args, isgroup=True, **kwargs)
 
 
 class DanbooruBot:
-    def __init__(self, token: str, mode: str, mode_config: dict = None, admins: List[str] = None):
+    def __init__(self, token: str, mode: str, mode_config: dict[str, str | int] = None, admins: list[str] = None):
         self.token = token
         self.mode = mode
         self.mode_config = mode_config or {}
         self.admins = admins or []
 
-        self.updater = None
+        self.updater: Updater
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def start(self):
@@ -80,12 +72,10 @@ class DanbooruBot:
         from . import utils
 
         if self.mode == 'webhook':
-            self.updater.start_webhook(listen=self.mode_config['listen'], port=self.mode_config['port'],
-                                       url_path=self.mode_config['url_path'])
-            self.updater.bot.set_webhook(url=self.mode_config['url'])
+           self.updater.start_webhook(**self.mode_config)
         else:
             self.updater.start_polling()
-            self.updater.idle()
+        self.updater.idle()
 
     def log_self(self):
         me = self.me()
@@ -94,16 +84,18 @@ class DanbooruBot:
     def me(self) -> User:
         return self.updater.bot.get_me()
 
-    def add_command(self, handler: Type[Handler] or Handler = None, name: str = None, func: Callable = None, **kwargs):
+    def add_command(self, handler: Type[Handler] | Handler = None, name: str = None, func: Callable = None, **kwargs):
         handler = handler or CommandHandler
-        kwargs.setdefault('filters', Filters.user(username=self.admins))
+        admin_only = kwargs.pop('admin', True)
+        if admin_only:
+            kwargs.setdefault('filters', Filters.user(username=self.admins))
 
         if isinstance(handler, Handler):
             self.updater.dispatcher.add_handler(handler=handler)
         elif handler is MessageHandler:
-            self.updater.dispatcher.add_handler(handler(callback=func, **kwargs))
+            self.updater.dispatcher.add_handler(handler(callback=func, **kwargs))  # type: ignore
         else:
-            self.updater.dispatcher.add_handler(handler=handler(name, func, **kwargs))
+            self.updater.dispatcher.add_handler(handler=handler(name, func, **kwargs))  # type: ignore
 
     def stop_and_restart(self, chat_id):
         """Gracefully stop the Updater and replace the current process with a new one.
@@ -113,7 +105,7 @@ class DanbooruBot:
         self.logger.info('Restarting: starting')
         os.execl(sys.executable, sys.executable, *sys.argv + [f'is_restart={chat_id}'])
 
-    def restart(self, bot: Bot, update: Update):
+    def restart(self, update: Update, context: CallbackContext):
         """Start the restarting process
 
         Args:
@@ -137,7 +129,9 @@ danbooru_bot: DanbooruBot
 
 def main():
     global danbooru_bot
-    danbooru_bot = DanbooruBot(TELEGRAM_API_TOKEN, mode=MODE['active'], mode_config=MODE.get('configuration'),
+    danbooru_bot = DanbooruBot(TELEGRAM_API_TOKEN,
+                               mode=MODE['active'],  # type: ignore
+                               mode_config=MODE.get('configuration'),  # type: ignore
                                admins=ADMINS)
     danbooru_bot.start()
 

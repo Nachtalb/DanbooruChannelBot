@@ -1,5 +1,7 @@
 # Created by .ignore support plugin (hsz.mobi)
 ### Vim template
+.vim/
+
 # Swap
 [._]*.s[a-v][a-z]
 [._]*.sw[a-p]
@@ -261,3 +263,4 @@ src/
 .mr.developer.cfg
 last_post.txt
 tracker.txt
+sub_config.json

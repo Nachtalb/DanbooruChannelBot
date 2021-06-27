@@ -1,3 +1,6 @@
+from requests_html import HTMLSession
+
+
 class BaseService:
     type = 'base'
 
@@ -10,9 +13,9 @@ class BaseService:
 
         self.count_qualifiers_as_tag = False
         self.client = None
-        self.session = None
-        self.tag_limit = None
-        self.censored_tags = None
+        self.session: HTMLSession
+        self.tag_limit: int
+        self.censored_tags: list[str]
 
     def init_client(self):
         raise NotImplemented

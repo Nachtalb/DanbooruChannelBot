@@ -22,12 +22,20 @@ setup(name='DanbooruChannelBot',
           'pybooru',
           'requests_html',
           'emoji',
-          'opencv-python',
           'ffprobe-python',
+          'ffmpeg-python',
+          'Cython',
           'timeout-decorator',
           'python-dotenv',
-          'Pillow',
+          'pyvips',
+          'yarl',
       ],
+      extras_require={
+          'dev': [
+              'ipython',
+              'ipdb',
+          ]
+      },
 
       entry_points={
           'console_scripts': [
