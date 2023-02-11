@@ -227,7 +227,7 @@ class Command:
         max_amount = len(available_tags - tags)
         fill_amount = default_amount if max_amount >= default_amount else max_amount
 
-        return tags | set(sample(available_tags - tags, k=fill_amount))
+        return tags | set(sample(sorted(available_tags - tags), k=fill_amount))
 
     def match_tags(self, source: set, check: set, strict: bool = True) -> bool:
         bad = set([tag[1:] for tag in check if tag.startswith("-")])
