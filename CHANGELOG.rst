@@ -4,7 +4,13 @@ Changelog
 1.1.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Reimplement docker (actually works now)
+- Support python 3.11
+- Remove buildout, in favour of the ususal python packaging system
+- Remove obsolete files
+- Define webhook path
+- Rename webhook env variables to have more descriptive names
+- Add config folder which will be filled with runtime files
 
 
 1.1.1 (2019-03-13)
