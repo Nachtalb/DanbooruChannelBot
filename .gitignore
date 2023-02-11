@@ -257,10 +257,8 @@ pip-selfcheck.json
 
 
 ### Bot
-.idea/
-buildout.cfg
 src/
-.mr.developer.cfg
 last_post.txt
 tracker.txt
 sub_config.json
+.env*
