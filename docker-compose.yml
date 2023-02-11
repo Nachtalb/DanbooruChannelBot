@@ -1,0 +1,11 @@
+version: "3"
+
+services:
+  danbooru_channel_bot:
+    container_name: danbooru_channel_bot
+    build: .
+    # ports:
+    #   - 5000:80
+    env_file: .env
+    volumes:
+      - ./config:/config
