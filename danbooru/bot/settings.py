@@ -73,9 +73,6 @@ SHOWN_TAGS = env(
         "yuri",
         "hololive",
         "animated",
-        "futanari",
-        "futa_with_female",
-        "futa_with_futa",
     },
 )
 
@@ -106,17 +103,21 @@ SERVICE = {
 # More information about polling and webhooks can be found here:
 # https://github.com/python-telegram-bot/python-telegram-bot/wiki/Webhooks
 if env("WEBHOOK", True):
-    DOMAIN = env("DOMAIN", required=True)
-    PORT = int(env("PORT", 5050))  # type: ignore
+    host = env("WEBHOOK_HOST", required=True)
+    port = int(env("WEBHOOK_PORT", 5050))  # type: ignore
+    path = env("WEBHOOK_PATH", "danbooru_channel_bot")
+
     MODE: dict[str, dict[str, str | int] | str] = {
         "active": "webhook",  # "webook" or "polling"
         "configuration": {
             "listen": "127.0.0.1",
-            "port": PORT,
+            "port": port,
             "url_path": TELEGRAM_API_TOKEN,
-            "webhook_url": f"https://{DOMAIN}/{TELEGRAM_API_TOKEN}",
+            "webhook_url": f"https://{host}/{path}",
         },
     }
+
+    print(f"{'*' * 50}\nWebhook listening to {MODE['configuration']['webhook_url']}\n{'*' * 50}")  # type: ignore
 else:
     MODE = {
         "active": "polling",
@@ -125,4 +126,4 @@ else:
 if env("DEBUG", False):
     LOG_LEVEL = logging.DEBUG
 else:
-    LOG_LEVEL = logging.INFO
+    LOG_LEVEL = logging.WARNING
