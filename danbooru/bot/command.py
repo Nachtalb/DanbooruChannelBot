@@ -2,11 +2,10 @@ from datetime import timedelta
 from io import BytesIO
 import json
 import logging
-from pathlib import Path
 from random import sample
 import re
 from time import time
-from typing import Any, Callable, Dict, Generator, Iterable
+from typing import Any, Callable, Dict, Iterable
 from urllib.parse import urlparse
 
 from emoji import emojize
@@ -26,7 +25,7 @@ from danbooru.bot.bot import danbooru_bot
 
 
 class Tracker(list):
-    _tracker_file = Path("tracker.txt")
+    _tracker_file = settings.CONFIG_FOLDER / "tracker.txt"
 
     def __init__(self):
         self._tracker_file.touch(exist_ok=True)
@@ -57,7 +56,7 @@ class Command:
     is_refreshing = False
     is_manual_refresh = False
     tracker = Tracker()
-    _sub_config = Path("sub_config.json")
+    _sub_config = settings.CONFIG_FOLDER / "sub_config.json"
     _prepared_post_kwargs = {}
     SAFE_CONFIG_KEYS = {
         "artist",
@@ -79,7 +78,7 @@ class Command:
 
     def __init__(self):
         self.service = DanbooruService(**settings.SERVICE)
-        self.last_post_file = Path("last_post.txt")
+        self.last_post_file = settings.CONFIG_FOLDER / "last_post.txt"
         self._last_post_id = None
         self.logger = logging.getLogger(self.__class__.__name__)
 

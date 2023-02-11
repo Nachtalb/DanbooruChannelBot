@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -22,6 +23,13 @@ def env(name, default=None, required=False, is_bool=False, is_list=False):
     elif value is None:
         return default
     return value
+
+
+if _dir := os.environ.get("CONFIG_FOLDER"):
+    CONFIG_FOLDER = Path(_dir)
+else:
+    CONFIG_FOLDER = Path(__file__).parent.parent.parent.with_name("data")
+CONFIG_FOLDER.mkdir(exist_ok=True)
 
 
 TELEGRAM_API_TOKEN: str = env("TELEGRAM_API_TOKEN", required=True)  # type: ignore
