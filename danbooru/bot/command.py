@@ -24,6 +24,9 @@ from danbooru.bot.animedatabase_utils.post import Post
 from danbooru.bot.bot import danbooru_bot
 
 
+
+
+
 class Tracker(list):
     _tracker_file = settings.CONFIG_FOLDER / "tracker.txt"
 

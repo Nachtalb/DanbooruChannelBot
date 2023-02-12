@@ -21,6 +21,8 @@ from .settings import ADMINS, LOG_LEVEL, MODE, TELEGRAM_API_TOKEN
 
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=LOG_LEVEL)
 
+danbooru_bot: "DanbooruBot" = None  # type: ignore
+
 
 def decorate_all_senders(cls):
     for attr in dir(cls):
@@ -47,7 +49,7 @@ class MQBot(Bot):
 
 
 class DanbooruBot:
-    def __init__(self, token: str, mode: str, mode_config: dict[str, str | int] = None, admins: list[str] = None):
+    def __init__(self, token: str, mode: str, mode_config: dict[str, str | int] | None = None, admins: list[str] = []):
         self.token = token
         self.mode = mode
         self.mode_config = mode_config or {}
@@ -84,7 +86,13 @@ class DanbooruBot:
     def me(self) -> User:
         return self.updater.bot.get_me()
 
-    def add_command(self, handler: Type[Handler] | Handler = None, name: str = None, func: Callable = None, **kwargs):
+    def add_command(
+        self,
+        handler: Type[Handler] | Handler | None = None,
+        name: str | None = None,
+        func: Callable | None = None,
+        **kwargs,
+    ):
         handler = handler or CommandHandler
         admin_only = kwargs.pop("admin", True)
         if admin_only:
@@ -121,21 +129,3 @@ class DanbooruBot:
         if any(is_restart_arg):
             chat_id = is_restart_arg[0].split("=")[1]
             self.updater.bot.send_message(chat_id, "Bot has successfully restarted.")
-
-
-danbooru_bot: DanbooruBot
-
-
-def main():
-    global danbooru_bot
-    danbooru_bot = DanbooruBot(
-        TELEGRAM_API_TOKEN,
-        mode=MODE["active"],  # type: ignore
-        mode_config=MODE.get("configuration"),  # type: ignore
-        admins=ADMINS,
-    )
-    danbooru_bot.start()
-
-
-if __name__ == "__main__":
-    main()
