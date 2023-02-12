@@ -104,20 +104,21 @@ SERVICE = {
 # https://github.com/python-telegram-bot/python-telegram-bot/wiki/Webhooks
 if env("WEBHOOK", True):
     host = env("WEBHOOK_HOST", required=True)
-    port = int(env("WEBHOOK_PORT", 5050))  # type: ignore
+    port = int(env("WEBHOOK_PORT", 80))  # type: ignore
     path = env("WEBHOOK_PATH", "danbooru_channel_bot")
+    listen = env("WEBHOOK_LISTEN", "0.0.0.0")  # type: ignore
 
-    MODE: dict[str, dict[str, str | int] | str] = {
+    MODE: dict = {
         "active": "webhook",  # "webook" or "polling"
         "configuration": {
-            "listen": "127.0.0.1",
+            "listen": listen,
             "port": port,
             "url_path": TELEGRAM_API_TOKEN,
             "webhook_url": f"https://{host}/{path}",
         },
     }
 
-    print(f"{'*' * 50}\nWebhook listening to {MODE['configuration']['webhook_url']}\n{'*' * 50}")  # type: ignore
+    print(f"{'*' * 50}\nWebhook listening to {MODE['configuration']['webhook_url']} on {listen}:{port}\n{'*' * 50}")  # type: ignore
 else:
     MODE = {
         "active": "polling",
