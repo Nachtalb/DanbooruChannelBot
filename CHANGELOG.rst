@@ -2,6 +2,8 @@ Changelog
 =========
 
 1.2.1 (unreleased)
+
+- Fix messages not sent when source starts with "file://"
 ------------------
 
 

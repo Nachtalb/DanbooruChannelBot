@@ -214,7 +214,7 @@ class Command:
     def get_sauce_url(self, post: Post) -> str:
         if post.post.get("pixiv_id"):
             return f"https://www.pixiv.net/member_illust.php?mode=medium&illust_id={post.pixiv_id}"
-        elif post.post.get("source"):
+        elif post.post.get("source") and not post.source.startswith("file://") :
             return post.source
         return ""
 
