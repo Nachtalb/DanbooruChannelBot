@@ -88,11 +88,11 @@ def make_tg_document_compatible(image: Image.Image, problems: list[int]) -> Byte
     return bytes
 
 
-async def ensure_tg_compatibility(post: Post) -> tuple[BytesIO | str, str, bool]:
+async def ensure_tg_compatibility(post: Post) -> tuple[BytesIO | str, str | None, bool]:
     if problems := is_tg_compatible(post):
         with Image.open(await app.api.download(post.best_file_url)) as pil_image:
             if IMAGE_RATIO_TOO_HIGH in problems:
-                return decrease_image_size(pil_image, BytesIO()), post.filename, True
-            return make_tg_compatible(pil_image, problems), "image.jpg", False
+                return decrease_image_size(pil_image, BytesIO()), None, True
+            return make_tg_compatible(pil_image, problems), "jpg", False
     else:
-        return post.best_file_url, post.filename, False
+        return post.best_file_url, None, False

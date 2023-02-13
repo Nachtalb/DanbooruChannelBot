@@ -68,9 +68,9 @@ async def _prepare_file(config: ChatConfig, post: Post) -> dict | None:
     file = None
 
     if post.is_image:
-        file, filename, as_document = await image.ensure_tg_compatibility(post)
+        file, file_ext, as_document = await image.ensure_tg_compatibility(post)
         if not as_document:
-            return {"photo": file, "filename": filename}
+            return {"photo": file, "filename": f"{post.id}.{file_ext}" if file_ext else post.filename}
 
     if post.is_video or post.is_gif:
         return {
