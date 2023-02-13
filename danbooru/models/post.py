@@ -91,3 +91,11 @@ class Post(BaseModel):
     @property
     def best_file_url(self) -> str:
         return self.file_url if not self.file_url.endswith("zip") else (self.large_file_url or self.file_url)
+
+    @property
+    def is_removed(self) -> bool:
+        return self.is_banned or self.is_deleted
+
+    @property
+    def filename(self) -> str:
+        return f"{self.id}.{self.file_ext}"

@@ -1,9 +1,12 @@
+from asyncio import create_task, gather, to_thread
+
 from PIL import Image
 from telegram import Update
 from telegram.ext import ContextTypes
 
 from danbooru import app
-from danbooru.files.image import is_tg_compatible, make_tg_compatible
+from danbooru.files import image
+from danbooru.models import ChatConfig, Post
 from danbooru.utils import post_format
 
 
@@ -20,16 +23,40 @@ async def post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     else:
         posts = await app.api.posts(2)
 
-    for post in posts:
-        caption = post_format(context.chat_data["config"], post)  # type: ignore
-        await update.message.reply_text(post.best_file_url)
-        if post.is_image:
-            if problems := is_tg_compatible(post):
-                with Image.open(await app.api.download(post.best_file_url)) as pil_image:
-                    image = {"photo": make_tg_compatible(pil_image, problems), "filename": "image.jpeg"}
-            else:
-                image = {"photo": post.best_file_url}
+    for task in [_prepare_post(context.chat_data["config"], post) for post in posts]:  # type: ignore
+        data = await task
+        if not data:
+            continue
 
-            await update.message.reply_photo(caption=caption, **image)
-        elif post.is_video or post.is_gif:
-            await update.message.reply_video(post.best_file_url, caption=caption)
+        await update.message.reply_text(data["filename"])
+        if "photo" in data:
+            await update.message.reply_photo(**data)
+        elif "video" in data:
+            await update.message.reply_video(**data)
+        elif "document" in data:
+            await update.message.reply_document(**data)
+
+
+async def _prepare_post(config: ChatConfig, post: Post) -> dict | None:
+    if post.is_removed or not config.post_allowed(post):
+        return
+
+    caption = post_format(config, post)
+    file = None
+
+    if post.is_image:
+        file, filename, as_document = await image.ensure_tg_compatibility(post)
+        if not as_document:
+            return {"photo": file, "filename": filename, "caption": caption}
+
+    if post.is_video or post.is_gif:
+        return {
+            "video": post.best_file_url,
+            "filename": post.filename,
+            "caption": caption,
+        }
+
+    return {
+        "document": file or await app.api.download(post.best_file_url),
+        "caption": caption,
+    }

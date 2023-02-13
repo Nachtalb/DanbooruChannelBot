@@ -2,6 +2,7 @@ from io import BytesIO
 
 from PIL import Image
 
+from .. import app
 from ..models import Post
 
 IMAGE_RES_TOO_HIGH = 0
@@ -26,7 +27,22 @@ def is_tg_compatible(post: Post) -> list[int]:
         # Max size of 20MB
         result.append(IMAGE_SIZE_TOO_HIGH)
 
+    print(f"{post.id}: {result}")
     return result
+
+
+def decrease_image_size(image: Image.Image, out: BytesIO, max_size: int = MAX_FILESIZE) -> BytesIO:
+    image.save(out, format="jpeg")
+
+    while out.getbuffer().nbytes >= max_size:
+        image = image.resize((int(image.width * 0.9), int(image.height * 0.9)))
+        out.seek(0)
+        out.truncate(0)
+        image.save(out, format="jpeg")
+
+    image.close()
+    out.seek(0)
+    return out
 
 
 def make_tg_compatible(image: Image.Image, problems: list[int]) -> BytesIO:
@@ -44,9 +60,19 @@ def make_tg_compatible(image: Image.Image, problems: list[int]) -> BytesIO:
         image = white_background
 
     if IMAGE_RES_TOO_HIGH in problems:
-        ratio = 10000 / image.width + image.height
+        ratio = 10000 / (image.width + image.height)
         image = image.resize((int(image.width * ratio), int(image.height * ratio)))
 
+    return decrease_image_size(image, BytesIO())
+
+
+def make_tg_document_compatible(image: Image.Image, problems: list[int]) -> BytesIO:
+    """Make image Telegram compatible
+
+    - max 10MB -> decrease width/height
+
+    @returns tuple[Image, bool]: New image and if it should be sent as a file
+    """
     bytes = BytesIO()
     image.save(bytes, format="jpeg")
 
@@ -60,3 +86,13 @@ def make_tg_compatible(image: Image.Image, problems: list[int]) -> BytesIO:
     image.close()
     bytes.seek(0)
     return bytes
+
+
+async def ensure_tg_compatibility(post: Post) -> tuple[BytesIO | str, str, bool]:
+    if problems := is_tg_compatible(post):
+        with Image.open(await app.api.download(post.best_file_url)) as pil_image:
+            if IMAGE_RATIO_TOO_HIGH in problems:
+                return decrease_image_size(pil_image, BytesIO()), post.filename, True
+            return make_tg_compatible(pil_image, problems), "image.jpg", False
+    else:
+        return post.best_file_url, post.filename, False
