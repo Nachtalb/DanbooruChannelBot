@@ -26,11 +26,17 @@ async def post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         posts = await app.api.posts(2)
 
     config = context.chat_data["config"]  # type: ignore
-    for index, (task, post) in enumerate([(_prepare_file(config, post), post) for post in posts]):
+    for index, (task, post) in enumerate([(_prepare_file(config, post), post) for post in posts], 1):
         print(f"{index}/{len(posts)} {post.id}")
         data = await task
         if not data:
             print(f"dropped {post.id}")
+            continue
+
+        if "text" in data:
+            await update.message.reply_text(
+                f"{data['text']}\n\n{post_format(config, post)}", reply_markup=_get_markup(config, post)
+            )
             continue
 
         data.update(
@@ -40,7 +46,7 @@ async def post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             }
         )
 
-        await update.message.reply_text(data["filename"])
+        #  await update.message.reply_text(data["filename"])
         if "photo" in data:
             await update.message.reply_photo(**data)
         elif "video" in data:
@@ -75,11 +81,14 @@ async def _prepare_file(config: ChatConfig, post: Post) -> dict | None:
 
     if post.is_image:
         file, file_ext, as_document = await image.ensure_tg_compatibility(post)
-        if not as_document:
+        if file and not as_document:
             return {"photo": file, "filename": f"{post.id}.{file_ext}" if file_ext else post.filename}
 
     if post.is_video or post.is_gif:
         file, file_ext, as_document = await video.ensure_tg_compatibility(post)
-        if not as_document:
+        if file and not as_document:
             return {"video": file, "filename": f"{post.id}.{file_ext}" if file_ext else post.filename}
-    return {"document": file or await app.api.download(post.best_file_url), "filename": post.filename}
+
+    if file:
+        return {"document": file or await app.api.download(post.best_file_url), "filename": post.filename}
+    return {"text": "⚠️ The file is too big to be sent (limit on Telegrams side)"}
