@@ -14,17 +14,23 @@ async def post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     if context.args:
         try:
-            posts = [await app.api.post(int(context.args[0]))]
+            arg_one = int(context.args[0])
+            if len(context.args) > 1:
+                posts = await app.api.posts(tags=context.args[1:], limit=arg_one)
+            else:
+                posts = [await app.api.post(int(context.args[0]))]
         except ValueError:
-            await update.message.reply_text("First argument has to be an post id")
-            return
+            posts = await app.api.posts(tags=context.args)
+            print(f"search {context.args}, {len(posts)}")
     else:
         posts = await app.api.posts(2)
 
     config = context.chat_data["config"]  # type: ignore
-    for task, post in [(_prepare_file(config, post), post) for post in posts]:
+    for index, (task, post) in enumerate([(_prepare_file(config, post), post) for post in posts]):
+        print(f"{index}/{len(posts)} {post.id}")
         data = await task
         if not data:
+            print(f"dropped {post.id}")
             continue
 
         data.update(

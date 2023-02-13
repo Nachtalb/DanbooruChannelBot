@@ -18,8 +18,10 @@ class Api:
     async def close(self):
         await self.session.close()
 
-    async def posts(self, limit: int = 10) -> list[Post]:
-        async with self.session.get(self._base_url / "posts.json", params={"limit": limit}) as response:
+    async def posts(self, limit: int = 10, tags: list[str] = []) -> list[Post]:
+        async with self.session.get(
+            self._base_url / "posts.json", params={"limit": limit, "tags": " ".join(tags)}
+        ) as response:
             return [Post.parse_obj(item) for item in await response.json()]
 
     async def post(self, id: int) -> Post:

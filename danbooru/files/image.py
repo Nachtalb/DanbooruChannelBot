@@ -27,7 +27,6 @@ def is_tg_compatible(post: Post) -> list[int]:
         # Max size of 20MB
         result.append(IMAGE_SIZE_TOO_HIGH)
 
-    print(f"{post.id}: {result}")
     return result
 
 
