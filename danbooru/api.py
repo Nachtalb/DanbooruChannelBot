@@ -30,7 +30,7 @@ class Api:
 
     async def download(self, url: str, out: Path | None = None) -> Path | BytesIO:
         async with self.session.get(url) as response:
-            if isinstance(out, Path):
+            if out:
                 aio_path = AsyncPath(out)
                 await aio_path.write_bytes(await response.content.read())
                 return out

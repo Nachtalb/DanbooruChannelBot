@@ -9,9 +9,6 @@ from danbooru.utils import post_format
 
 
 async def post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not update.message:
-        return
-
     if context.args:
         try:
             arg_one = int(context.args[0])
@@ -24,6 +21,13 @@ async def post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             print(f"search {context.args}, {len(posts)}")
     else:
         posts = await app.api.posts(2)
+
+    await _send_posts(update, context, posts)
+
+
+async def _send_posts(update: Update, context: ContextTypes.DEFAULT_TYPE, posts: list[Post]):
+    if not update.message:
+        return
 
     config = context.chat_data["config"]  # type: ignore
     for index, (task, post) in enumerate([(_prepare_file(config, post), post) for post in posts], 1):
