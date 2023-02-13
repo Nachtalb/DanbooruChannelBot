@@ -93,8 +93,8 @@ class Post(BaseModel):
         return self.file_url if not self.file_url.endswith("zip") else (self.large_file_url or self.file_url)
 
     @property
-    def is_removed(self) -> bool:
-        return self.is_banned or self.is_deleted
+    def is_bad(self) -> bool:
+        return self.is_banned or (self.is_deleted and ((self.up_score or 1) / abs(self.down_score or 1) < 2))
 
     @property
     def filename(self) -> str:

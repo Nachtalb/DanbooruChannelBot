@@ -62,7 +62,7 @@ def _get_markup(chat: ChatConfig, post: Post):
 
 
 async def _prepare_file(config: ChatConfig, post: Post) -> dict | None:
-    if post.is_removed or not config.post_allowed(post):
+    if post.is_bad or not config.post_allowed(post):
         return
 
     file = None
