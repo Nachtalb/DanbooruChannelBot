@@ -9,10 +9,10 @@ class Api:
         self.user = user
         self.key = key
 
-    async def posts(self) -> list[Post]:
-        async with self.session.get("posts.json") as response:
+    async def posts(self, limit: int = 10) -> list[Post]:
+        async with self.session.get("/posts.json", params={"limit": limit}) as response:
             return [Post.parse_obj(item) for item in await response.json()]
 
     async def post(self, id: int) -> Post:
-        async with self.session.get(f"posts/{id}.json") as response:
+        async with self.session.get(f"/posts/{id}.json") as response:
             return Post.parse_obj(await response.json())
