@@ -3,7 +3,7 @@ from telegram.ext import ContextTypes
 from yarl import URL
 
 from danbooru import app
-from danbooru.files import image
+from danbooru.files import image, video
 from danbooru.models import ChatConfig, Post
 from danbooru.utils import post_format
 
@@ -73,9 +73,7 @@ async def _prepare_file(config: ChatConfig, post: Post) -> dict | None:
             return {"photo": file, "filename": f"{post.id}.{file_ext}" if file_ext else post.filename}
 
     if post.is_video or post.is_gif:
-        return {
-            "video": post.best_file_url,
-            "filename": post.filename,
-        }
-
+        file, file_ext, as_document = await video.ensure_tg_compatibility(post)
+        if not as_document:
+            return {"video": file, "filename": f"{post.id}.{file_ext}" if file_ext else post.filename}
     return {"document": file or await app.api.download(post.best_file_url), "filename": post.filename}
