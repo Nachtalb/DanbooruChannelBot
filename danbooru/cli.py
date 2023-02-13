@@ -7,7 +7,14 @@ from .models import Config
 
 if __name__ == "__main__":
     app.config = Config()  # type: ignore
-    app.application = ApplicationBuilder().post_init(app.post_init).token(app.config.BOT_TOKEN).build()
+    app.application = (
+        ApplicationBuilder()
+        .post_init(app.post_init)
+        .post_shutdown(app.post_shutdown)
+        .token(app.config.BOT_TOKEN)
+        .build()
+    )
+
     app.api = Api(user=app.config.DANBOORU_USERNAME, key=app.config.DANBOORU_KEY)
 
     app.application.add_handler(MessageHandler(filters.ALL, set_config), group=-1)

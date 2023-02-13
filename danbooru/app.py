@@ -19,3 +19,8 @@ async def post_init(application: Application):
             ("post", "Send some posts"),
         ]
     )
+
+
+async def post_shutdown(application: Application):
+    global api
+    await api.close()
