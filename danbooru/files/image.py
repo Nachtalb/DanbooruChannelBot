@@ -2,8 +2,8 @@ from io import BytesIO
 
 from PIL import Image
 
-from .. import app
-from ..models import Post
+from danbooru import app
+from danbooru.models import Post
 
 IMAGE_RES_TOO_HIGH = 0
 IMAGE_RATIO_TOO_HIGH = 1

@@ -1,7 +1,7 @@
 from io import BytesIO
 
-from .. import app
-from ..models import Post
+from danbooru import app
+from danbooru.models import Post
 
 
 TG_MAX_FILESIZE = 20000000  # 20 MB if we send url

@@ -2,10 +2,10 @@ from io import BytesIO
 from pathlib import Path
 
 from aiohttp import BasicAuth, ClientSession
-from aiopath import AsyncPath
 from yarl import URL
 
-from .models import Post
+from aiopath import AsyncPath
+from danbooru.models import Post
 
 
 class Api:

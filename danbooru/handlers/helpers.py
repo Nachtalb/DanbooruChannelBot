@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from ..models import ChatConfig
+from danbooru.models import ChatConfig
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

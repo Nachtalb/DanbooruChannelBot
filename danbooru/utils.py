@@ -2,9 +2,8 @@ import random
 import re
 from typing import Iterable, Sequence
 
+from danbooru.models import ChatConfig, Post
 from danbooru.models.post import RATING
-
-from .models import ChatConfig, Post
 
 
 def post_format(config: ChatConfig, post: Post) -> str:

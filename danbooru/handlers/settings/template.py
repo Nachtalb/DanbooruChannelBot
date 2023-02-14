@@ -2,9 +2,8 @@ from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from danbooru.handlers.poster import post
+from danbooru.handlers.settings import home
 from danbooru.models import ChatConfig
-
-from . import home
 
 TEMPLATE = 6
 

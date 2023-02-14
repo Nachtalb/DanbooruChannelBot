@@ -1,7 +1,9 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from .edit import EDIT_1_SUBSCRIPTION_GROUPS
+from danbooru.handlers.settings.subscription_groups.edit import (
+    EDIT_1_SUBSCRIPTION_GROUPS,
+)
 
 
 async def new_subscription_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:

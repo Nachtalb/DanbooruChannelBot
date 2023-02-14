@@ -3,10 +3,11 @@ from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 from telegram.ext import ContextTypes
 
+from danbooru.handlers.settings.subscription_groups.edit import (
+    EDIT_1_SUBSCRIPTION_GROUPS,
+)
 from danbooru.models.chat_config import ChatConfig
 from danbooru.utils import chunks
-
-from .edit import EDIT_1_SUBSCRIPTION_GROUPS
 
 LIST_SUBSCRIPTION_GROUPS = 9
 

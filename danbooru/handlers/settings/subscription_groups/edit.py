@@ -1,10 +1,9 @@
 from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
+from danbooru.handlers.settings.subscription_groups import subscription_groups
 from danbooru.models.chat_config import ChatConfig, SubscriptionGroup
 from danbooru.utils import bool_emoji as be
-
-from . import subscription_groups
 
 EDIT_1_SUBSCRIPTION_GROUPS = 12
 EDIT_2_SUBSCRIPTION_GROUPS = 15

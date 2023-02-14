@@ -10,20 +10,17 @@ from telegram.ext import (
     filters,
 )
 
-from danbooru.handlers import settings
-from danbooru.handlers.settings import as_files, template
-from danbooru.handlers.settings import subscription_groups
+from danbooru import app
+from danbooru.api import Api
+from danbooru.handlers import help, post, set_config, settings, start
+from danbooru.handlers.settings import as_files, subscription_groups as sg, template
 from danbooru.handlers.settings.subscription_groups import (
     delete as sg_delete,
     edit as sg_edit,
     list as sg_list,
     new as sg_new,
 )
-
-from . import app
-from .api import Api
-from .handlers import help, post, set_config, start
-from .models import Config
+from danbooru.models import Config
 
 if __name__ == "__main__":
     app.config = Config()  # type: ignore
@@ -50,7 +47,7 @@ if __name__ == "__main__":
             MessageHandler(filters.Regex(r"^Toggle (\w+) button"), settings.toggle_button),
             MessageHandler(filters.Regex(r"^Change message template$"), template.template),
             MessageHandler(filters.Regex(r"^Send posts as files$"), as_files.as_files),
-            MessageHandler(filters.Regex(r"^Change tag filter$"), subscription_groups.subscription_groups),
+            MessageHandler(filters.Regex(r"^Change tag filter$"), sg.subscription_groups),
             MessageHandler(filters.Regex(r"^Export$"), settings.export),
             MessageHandler(filters.Regex(r"^Import$"), settings.wait_for_import),
             MessageHandler(filters.Regex(r"^Close$"), settings.cleanup),
@@ -70,20 +67,20 @@ if __name__ == "__main__":
             MessageHandler(filters.Regex(r"^(All|Sensitive|Questionable|Explicit|Disable)"), as_files.change_threshold),
             MessageHandler(filters.Regex(r"^Cancel$"), settings.home),
         ],
-        subscription_groups.HOME_SUBSCRIPTION_GROUPS: [
+        sg.HOME_SUBSCRIPTION_GROUPS: [
             MessageHandler(filters.Regex(r"^Edit existing groups$"), sg_list.list_subscription_groups),
             MessageHandler(filters.Regex(r"^Create new group$"), sg_new.new_subscription_groups),
             MessageHandler(filters.Regex(r"^Delete a group$"), sg_delete.delete_subscription_groups),
-            MessageHandler(filters.Regex(r"^Toggle group policy"), subscription_groups.group_policy),
-            MessageHandler(filters.Regex(r"^Test groups$"), subscription_groups.test_group),
+            MessageHandler(filters.Regex(r"^Toggle group policy"), sg.group_policy),
+            MessageHandler(filters.Regex(r"^Test groups$"), sg.test_group),
             MessageHandler(filters.Regex(r"^Back$"), settings.home),
         ],
-        subscription_groups.TEST_SUBSCRIPTION_GROUPS: [
-            MessageHandler(filters.Regex(r"^Cancel$"), subscription_groups.subscription_groups),
-            MessageHandler(TEXT_ONLY, subscription_groups.run_test_group),
+        sg.TEST_SUBSCRIPTION_GROUPS: [
+            MessageHandler(filters.Regex(r"^Cancel$"), sg.subscription_groups),
+            MessageHandler(TEXT_ONLY, sg.run_test_group),
         ],
         sg_delete.DELETE_1_SUBSCRIPTION_GROUPS: [
-            MessageHandler(filters.Regex(r"^Cancel$"), subscription_groups.subscription_groups),
+            MessageHandler(filters.Regex(r"^Cancel$"), sg.subscription_groups),
             MessageHandler(TEXT_ONLY, sg_delete.confirmation),
         ],
         sg_delete.DELETE_2_SUBSCRIPTION_GROUPS: [

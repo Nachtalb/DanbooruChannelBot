@@ -1,11 +1,10 @@
 from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
+from danbooru.handlers.settings import home
 from danbooru.models import ChatConfig
 from danbooru.models.post import RATING
 from danbooru.utils import set_emoji as se
-
-from . import home
 
 
 AS_FILES = 5

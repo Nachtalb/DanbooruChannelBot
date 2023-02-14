@@ -1,7 +1,7 @@
 from telegram.ext import Application
 
-from .api import Api
-from .models.config import Config
+from danbooru.api import Api
+from danbooru.models.config import Config
 
 
 application: Application = None  # type: ignore
