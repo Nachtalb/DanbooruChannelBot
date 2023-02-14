@@ -1,4 +1,5 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.error import BadRequest
 from yarl import URL
 
 from danbooru import app
@@ -33,27 +34,42 @@ async def _send_posts(update: Update, context: CustomContext, posts: list[Post])
         if not data:
             continue
 
-        if "text" in data:
-            await update.message.reply_text(
-                f"{data['text']}\n\n{post_format(context.chat_data, post)}",  # type: ignore
-                reply_markup=_get_markup(context.chat_data, post),  # type: ignore
-            )
-            continue
+        try:
+            await _send_to_chat(update, context, data, post)
+        except BadRequest:
+            if isinstance(data.get("photo", data.get("video", data.get("document"))), str):
+                new_data = await _prepare_file(context.chat_data, post, force_download=True)
+                if new_data:
+                    await _send_to_chat(update, context, new_data, post)
+                    continue
+            raise
 
-        data.update(
-            {
-                "caption": post_format(context.chat_data, post),  # type: ignore
-                "reply_markup": _get_markup(context.chat_data, post),  # type: ignore
-            }
+
+async def _send_to_chat(update: Update, context: CustomContext, data: dict, post: Post):
+    if not update.message:
+        return
+
+    if "text" in data:
+        await update.message.reply_text(
+            f"{data['text']}\n\n{post_format(context.chat_data, post)}",  # type: ignore
+            reply_markup=_get_markup(context.chat_data, post),  # type: ignore
         )
+        return
 
-        #  await update.message.reply_text(data["filename"])
-        if "photo" in data:
-            await update.message.reply_photo(**data)
-        elif "video" in data:
-            await update.message.reply_video(**data)
-        elif "document" in data:
-            await update.message.reply_document(**data)
+    data.update(
+        {
+            "caption": post_format(context.chat_data, post),  # type: ignore
+            "reply_markup": _get_markup(context.chat_data, post),  # type: ignore
+        }
+    )
+
+    #  await update.message.reply_text(data["filename"])
+    if "photo" in data:
+        await update.message.reply_photo(**data)
+    elif "video" in data:
+        await update.message.reply_video(**data)
+    elif "document" in data:
+        await update.message.reply_document(**data)
 
 
 def _get_markup(chat: ChatData, post: Post):
@@ -74,22 +90,22 @@ def _get_markup(chat: ChatData, post: Post):
     return InlineKeyboardMarkup([buttons])
 
 
-async def _prepare_file(config: ChatData, post: Post) -> dict | None:
+async def _prepare_file(config: ChatData, post: Post, force_download: bool = False) -> dict | None:
     if post.is_bad or not config.post_allowed(post):
         return
 
     file = None
 
     if config.post_above_threshold(post):
-        file, file_ext, as_document = await document.ensure_tg_compatibility(post)
+        file, file_ext, as_document = await document.ensure_tg_compatibility(post, force_download)
 
     if not file and post.is_image:
-        file, file_ext, as_document = await image.ensure_tg_compatibility(post)
+        file, file_ext, as_document = await image.ensure_tg_compatibility(post, force_download)
         if file and not as_document:
             return {"photo": file, "filename": f"{post.id}.{file_ext}" if file_ext else post.filename}
 
     if not file and (post.is_video or post.is_gif):
-        file, file_ext, as_document = await video.ensure_tg_compatibility(post)
+        file, file_ext, as_document = await video.ensure_tg_compatibility(post, force_download)
         if file and not as_document:
             return {"video": file, "filename": f"{post.id}.{file_ext}" if file_ext else post.filename}
 
