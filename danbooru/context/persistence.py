@@ -207,11 +207,11 @@ class PydanticPersistence(DictPersistence):
 
     @staticmethod
     def _decode_user_data_from_json(data: str) -> dict[int, UserData]:
-        return {user_id: UserData.parse_obj(user_data) for user_id, user_data in json.loads(data).items()}
+        return {int(user_id): UserData.parse_obj(user_data) for user_id, user_data in json.loads(data).items()}
 
     @staticmethod
     def _decode_chat_data_from_json(data: str) -> dict[int, ChatData]:
-        return {chat_id: ChatData.parse_obj(chat_data) for chat_id, chat_data in json.loads(data).items()}
+        return {int(chat_id): ChatData.parse_obj(chat_data) for chat_id, chat_data in json.loads(data).items()}
 
     @staticmethod
     def _decode_bot_data_from_json(data: str) -> BotData:
