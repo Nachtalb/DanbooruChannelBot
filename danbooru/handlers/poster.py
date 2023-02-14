@@ -28,22 +28,22 @@ async def _send_posts(update: Update, context: CustomContext, posts: list[Post])
     if not update.message:
         return
 
-    for task, post in [(_prepare_file(context.chat_data, post), post) for post in posts]:
+    for task, post in [(_prepare_file(context.chat_data, post), post) for post in posts]:  # type: ignore
         data = await task
         if not data:
             continue
 
         if "text" in data:
             await update.message.reply_text(
-                f"{data['text']}\n\n{post_format(context.chat_data, post)}",
-                reply_markup=_get_markup(context.chat_data, post),
+                f"{data['text']}\n\n{post_format(context.chat_data, post)}",  # type: ignore
+                reply_markup=_get_markup(context.chat_data, post),  # type: ignore
             )
             continue
 
         data.update(
             {
-                "caption": post_format(context.chat_data, post),
-                "reply_markup": _get_markup(context.chat_data, post),
+                "caption": post_format(context.chat_data, post),  # type: ignore
+                "reply_markup": _get_markup(context.chat_data, post),  # type: ignore
             }
         )
 
