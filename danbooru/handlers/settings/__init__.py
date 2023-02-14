@@ -26,7 +26,7 @@ async def home(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             [f"Toggle direct button {be(config.show_direct_button)}", "Change message template"],
             ["Send posts as files", "Change tag filter"],
             ["Export", "Import"],
-            ["Cancel"],
+            ["Close"],
         ],
         one_time_keyboard=True,
         selective=True,
@@ -49,16 +49,20 @@ async def toggle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     return await home(update, context)
 
 
-async def full_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    if update.message:
-        await update.message.reply_text(
-            "Cancelled the current action", reply_markup=ReplyKeyboardRemove(selective=True)
-        )
+async def cleanup(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if context.chat_data:
         config = context.chat_data["config"]
         context.chat_data.clear()
         context.chat_data["config"] = config
     return ConversationHandler.END
+
+
+async def full_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    if update.message:
+        await update.message.reply_text(
+            "Cancelled the current action", reply_markup=ReplyKeyboardRemove(selective=True)
+        )
+    return await cleanup(update, context)
 
 
 async def export(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:

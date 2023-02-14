@@ -45,6 +45,7 @@ async def template(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 - <code>{{characters}}</code> - All character tags
 - <code>{{copyright}}</code> - All copyright tags
 - <code>{{meta}}</code> - All meta tags
+- <code>{{rating}}</code> - Rating (general, sensitive, questionable, explicit or unset)
 
 ------------
 

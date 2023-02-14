@@ -2,6 +2,8 @@ import random
 import re
 from typing import Iterable, Sequence
 
+from danbooru.models.post import RATING
+
 from .models import ChatConfig, Post
 
 
@@ -10,8 +12,11 @@ def post_format(config: ChatConfig, post: Post) -> str:
         posted_at=post.created_at.strftime("%d/%m/%Y at %H:%M"),
         id=post.id,
         tags=", ".join(sample(tg_tags(post.tags_general), 15)),
-        artists=", ".join(tg_tags(post.tags_artist)),
-        characters=", ".join(tg_tags(post.tags_character)),
+        artists=tg_tags_string(post.tags_artist),
+        characters=tg_tags_string(post.tags_character),
+        copyright=tg_tags_string(post.tags_character),
+        meta=tg_tags_string(post.tags_character),
+        rating=RATING.simple(post.rating) if post.rating else "unset",
     )
 
 
@@ -28,6 +33,10 @@ def tg_tag(tag: str) -> str | None:
 
 def tg_tags(tags: Iterable[str]) -> Sequence[str]:
     return tuple(filter(None, map(tg_tag, tags)))
+
+
+def tg_tags_string(tags: Iterable[str]) -> str:
+    return ", ".join(tg_tags(tags))
 
 
 def bool_emoji(value: bool) -> str:

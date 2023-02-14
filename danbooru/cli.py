@@ -53,7 +53,7 @@ if __name__ == "__main__":
             MessageHandler(filters.Regex(r"^Change tag filter$"), subscription_groups.subscription_groups),
             MessageHandler(filters.Regex(r"^Export$"), settings.export),
             MessageHandler(filters.Regex(r"^Import$"), settings.wait_for_import),
-            MessageHandler(filters.Regex(r"^Cancel$"), settings.home),
+            MessageHandler(filters.Regex(r"^Close$"), settings.cleanup),
         ],
         settings.WAIT_FOR_IMPORT: [
             MessageHandler(filters.Document.ALL, settings.import_settings),

@@ -12,8 +12,12 @@ class RATING:
     levels = {"rating:general": 0, "rating:sensitive": 1, "rating:questionable": 2, "rating:explicit": 3}
 
     @staticmethod
-    def level(rating) -> int:
-        return RATING.levels.get(getattr(RATING, rating, rating), 0)  # type: ignore
+    def level(rating: str) -> int:
+        return RATING.levels.get(getattr(RATING, rating, rating), 0)
+
+    @staticmethod
+    def simple(rating: str) -> str:
+        return getattr(RATING, rating, rating).split(":")[-1]
 
 
 class Post(BaseModel):
