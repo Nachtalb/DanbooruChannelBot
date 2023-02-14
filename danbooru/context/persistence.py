@@ -36,12 +36,12 @@ class PydanticPersistence(DictPersistence):
     ):
         self._data_directory = data_directory
 
-        user_data_json, chat_data_json, bot_data_json, conversations_json, callback_data_json = self._load_from_dir()
+        user_data_json, chat_data_json, bot_data_json, callback_data_json, conversations_json = self._load_from_dir()
 
         super().__init__(
             store_data=store_data,
-            conversations_json=conversations_json,
             callback_data_json=callback_data_json,
+            conversations_json=conversations_json,
             update_interval=update_interval,
         )
 
@@ -59,8 +59,8 @@ class PydanticPersistence(DictPersistence):
                 raise TypeError("Unable to deserialize chat_data_json.") from exc
         if bot_data_json:
             try:
-                self._bot_data = self._decode_bot_data_from_json(chat_data_json)
-                self._bot_data_json = chat_data_json
+                self._bot_data = self._decode_bot_data_from_json(bot_data_json)
+                self._bot_data_json = bot_data_json
             except ValidationError as exc:
                 raise TypeError("Unable to deserialize bot_data_json.") from exc
 
@@ -74,7 +74,13 @@ class PydanticPersistence(DictPersistence):
         """:obj:`str`: the user_data serialized as a json-string."""
         if self._user_data_json:
             return self._user_data_json
-        return json.dumps({uid: data.dict() for uid, data in self.user_data.items()}) if self.user_data else "{}"
+        # FIXME json.loads(data.json()) is to ensure we don't get errors like "datetime is
+        # not json serializable" but it's not very efficient. It works for now... (famous last words)
+        return (
+            json.dumps({uid: json.loads(data.json()) for uid, data in self.user_data.items()})
+            if self.user_data
+            else "{}"
+        )
 
     @property
     def chat_data(self) -> Optional[dict[int, ChatData]]:
@@ -86,7 +92,13 @@ class PydanticPersistence(DictPersistence):
         """:obj:`str`: the chat_data serialized as a json-string."""
         if self._chat_data_json:
             return self._chat_data_json
-        return json.dumps({cid: data.dict() for cid, data in self.chat_data.items()}) if self.chat_data else "{}"
+        # FIXME json.loads(data.json()) is to ensure we don't get errors like "datetime is
+        # not json serializable" but it's not very efficient. It works for now... (famous last words)
+        return (
+            json.dumps({cid: json.loads(data.json()) for cid, data in self.chat_data.items()})
+            if self.chat_data
+            else "{}"
+        )
 
     @property
     def bot_data(self) -> Optional[BotData]:
