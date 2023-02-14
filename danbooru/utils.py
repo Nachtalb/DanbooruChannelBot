@@ -16,7 +16,7 @@ def post_format(config: ChatConfig, post: Post) -> str:
         characters=tg_tags_string(post.tags_character),
         copyright=tg_tags_string(post.tags_character),
         meta=tg_tags_string(post.tags_character),
-        rating=RATING.simple(post.rating) if post.rating else "unset",
+        rating="#" + (RATING.simple(post.rating) if post.rating else "unset"),
     )
 
 
