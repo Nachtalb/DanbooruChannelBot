@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     TEXT_ONLY = filters.TEXT & (~filters.COMMAND)
 
-    states = {
+    settings_conversation = {
         settings.HOME: [
             MessageHandler(filters.Regex(r"^Toggle (\w+) button"), settings.toggle_button),
             MessageHandler(filters.Regex(r"^Change message template$"), template.template),
@@ -101,7 +101,7 @@ if __name__ == "__main__":
 
     settings_handler = ConversationHandler(
         entry_points=[CommandHandler("settings", settings.home)],
-        states=states,
+        states=settings_conversation,
         fallbacks=[MessageHandler(filters.Regex(re.compile(r"^/?cancel$", re.IGNORECASE)), settings.full_cancel)],
     )
 
