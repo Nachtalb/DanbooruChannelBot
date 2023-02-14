@@ -1,21 +1,20 @@
-from asyncio import set_child_watcher
 from io import BytesIO
 
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
-from telegram.ext import ContextTypes, ConversationHandler
+from telegram.ext import ConversationHandler
 
-from danbooru.models.chat_config import ChatConfig
+from danbooru.context import ChatData, CustomContext
 from danbooru.utils import bool_emoji as be
 
 HOME = 1
 WAIT_FOR_IMPORT = 19
 
 
-async def home(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def home(update: Update, context: CustomContext) -> int:
     if not update.message:
         return HOME
 
-    config: ChatConfig = context.chat_data["config"]  # type: ignore
+    config: ChatData = context.chat_data  # type: ignore
 
     markup = ReplyKeyboardMarkup(
         [
@@ -36,8 +35,8 @@ async def home(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return HOME
 
 
-async def toggle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    config: ChatConfig = context.chat_data["config"]  # type: ignore
+async def toggle_button(update: Update, context: CustomContext) -> int:
+    config: ChatData = context.chat_data  # type: ignore
     match context.matches[0].groups()[0].lower():  # type: ignore
         case "danbooru":
             config.show_danbooru_button = not config.show_danbooru_button
@@ -49,15 +48,13 @@ async def toggle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     return await home(update, context)
 
 
-async def cleanup(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def cleanup(update: Update, context: CustomContext) -> int:
     if context.chat_data:
-        config = context.chat_data["config"]
-        context.chat_data.clear()
-        context.chat_data["config"] = config
+        context.chat_data.temporary_data = {}
     return ConversationHandler.END
 
 
-async def full_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def full_cancel(update: Update, context: CustomContext) -> int:
     if update.message:
         await update.message.reply_text(
             "Cancelled the current action", reply_markup=ReplyKeyboardRemove(selective=True)
@@ -65,17 +62,17 @@ async def full_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     return await cleanup(update, context)
 
 
-async def export(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def export(update: Update, context: CustomContext) -> int:
     if not update.message:
         return HOME
-    config: ChatConfig = context.chat_data["config"]  # type: ignore
+    config: ChatData = context.chat_data  # type: ignore
 
     file = BytesIO(config.json().encode())
     await update.message.reply_document(document=file, filename=f"{update.message.chat_id}.json")
     return await home(update, context)
 
 
-async def wait_for_import(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def wait_for_import(update: Update, context: CustomContext) -> int:
     if not update.message:
         return HOME
 
@@ -87,7 +84,7 @@ async def wait_for_import(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     return WAIT_FOR_IMPORT
 
 
-async def import_settings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def import_settings(update: Update, context: CustomContext) -> int:
     if not update.message or not update.message.document:
         return WAIT_FOR_IMPORT
 
@@ -99,11 +96,13 @@ async def import_settings(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     with BytesIO() as out:
         await tg_file.download_to_memory(out)
         try:
-            config = ChatConfig.parse_raw(out.getvalue())
+            config = ChatData.parse_raw(out.getvalue())
         except Exception:
             await update.message.reply_text("Have you uploaded the correct file?")
             return WAIT_FOR_IMPORT
 
-    context.chat_data["config"] = config  # type: ignore
+    for name, _ in context.chat_data:  # type: ignore
+        setattr(context.chat_data, name, getattr(config, name))
+    context.chat_data.temporary_data = {}  # type: ignore
     await update.message.reply_text(f"{be(True)} Imported the settings successfully!")
     return await home(update, context)

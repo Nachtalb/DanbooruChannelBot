@@ -1,8 +1,7 @@
 from telegram import ReplyKeyboardMarkup, Update
-from telegram.ext import ContextTypes
 
+from danbooru.context import ChatData, CustomContext
 from danbooru.handlers.settings import home
-from danbooru.models import ChatConfig
 from danbooru.models.post import RATING
 from danbooru.utils import set_emoji as se
 
@@ -10,11 +9,11 @@ from danbooru.utils import set_emoji as se
 AS_FILES = 5
 
 
-async def as_files(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def as_files(update: Update, context: CustomContext) -> int:
     if not update.message:
         return AS_FILES
 
-    config: ChatConfig = context.chat_data["config"]  # type: ignore
+    config: ChatData = context.chat_data  # type: ignore
 
     markup = ReplyKeyboardMarkup(
         [
@@ -41,8 +40,8 @@ async def as_files(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return AS_FILES
 
 
-async def change_threshold(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    config: ChatConfig = context.chat_data["config"]  # type: ignore
+async def change_threshold(update: Update, context: CustomContext) -> int:
+    config: ChatData = context.chat_data  # type: ignore
     match context.matches[0].groups()[0].lower():  # type: ignore
         case "all":
             config.send_as_files_threshold = RATING.general

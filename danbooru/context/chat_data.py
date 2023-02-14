@@ -23,6 +23,8 @@ class ChatData(BaseModel):
     subscription_groups: list[SubscriptionGroup] = []
     subscription_groups_or: bool = False  # False = OR, True = AND
 
+    temporary_data: dict = {}
+
     @property
     def send_as_files(self) -> bool:
         return self.send_as_files_threshold != ""
