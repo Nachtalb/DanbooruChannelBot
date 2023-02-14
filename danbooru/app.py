@@ -16,6 +16,7 @@ async def post_init(application: Application):
             ("start", "Starts the bot"),
             ("help", "Show help message"),
             ("settings", "Configure the bot"),
+            ("cancel", "Cancel current action"),
             ("post", "Send some posts"),
         ]
     )

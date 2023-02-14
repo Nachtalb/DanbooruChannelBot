@@ -14,10 +14,5 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("Help")
 
 
-async def settings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if update.message:
-        await update.message.reply_text("Settings")
-
-
 async def set_config(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     context.chat_data.setdefault("config", ChatConfig())  # type: ignore

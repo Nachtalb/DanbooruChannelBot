@@ -3,6 +3,16 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
+class RATING:
+    g = general = "rating:general"
+    s = sensitive = "rating:sensitive"
+    q = questionable = "rating:questionable"
+    e = explicit = "rating:explicit"
+
+    def __getitem__(self, value) -> str:
+        return getattr(self, value)
+
+
 class Post(BaseModel):
     id: int
     created_at: datetime

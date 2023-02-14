@@ -28,3 +28,16 @@ def tg_tag(tag: str) -> str | None:
 
 def tg_tags(tags: Iterable[str]) -> Sequence[str]:
     return tuple(filter(None, map(tg_tag, tags)))
+
+
+def bool_emoji(value: bool) -> str:
+    return "🟢" if value else "🔴"
+
+
+def set_emoji(value: bool) -> str:
+    return "🟢" if value else ""
+
+
+def chunks(lst, n):
+    for i in range(0, len(lst), n):
+        yield lst[i : i + n]

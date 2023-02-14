@@ -18,7 +18,6 @@ async def post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 posts = [await app.api.post(int(context.args[0]))]
         except ValueError:
             posts = await app.api.posts(tags=context.args)
-            print(f"search {context.args}, {len(posts)}")
     else:
         posts = await app.api.posts(2)
 
@@ -30,11 +29,9 @@ async def _send_posts(update: Update, context: ContextTypes.DEFAULT_TYPE, posts:
         return
 
     config = context.chat_data["config"]  # type: ignore
-    for index, (task, post) in enumerate([(_prepare_file(config, post), post) for post in posts], 1):
-        print(f"{index}/{len(posts)} {post.id}")
+    for task, post in [(_prepare_file(config, post), post) for post in posts]:
         data = await task
         if not data:
-            print(f"dropped {post.id}")
             continue
 
         if "text" in data:

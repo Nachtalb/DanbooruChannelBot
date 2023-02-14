@@ -4,6 +4,7 @@ from danbooru.models.post import Post
 
 
 class SubscriptionGroup(BaseModel):
+    name: str
     include: set[str] = set()
     exclude: set[str] = set()
     include_full_match: bool = False
@@ -18,10 +19,16 @@ class ChatConfig(BaseModel):
         "Posted at: {posted_at}\nID: {id}\nTags: {tags}\nArtists: {artists}\nCharacters:"
         " {characters}\n\n@doIfis_channels"
     )
-    send_as_files: bool = False
-    send_as_files_threshold: str = "sensitive"
+    send_as_files_threshold: str = ""
     subscription_groups: list[SubscriptionGroup] = []
     subscription_groups_or: bool = False  # False = OR, True = AND
+
+    @property
+    def send_as_files(self) -> bool:
+        return self.send_as_files_threshold != ""
+
+    def get_subscription_group(self, name: str) -> SubscriptionGroup | None:
+        return next(filter(lambda group: group.name == name, self.subscription_groups), None)
 
     def post_allowed(self, post: Post) -> bool:
         if not self.subscription_groups:
