@@ -13,10 +13,8 @@ from telegram.ext import (
 
 from danbooru import app
 from danbooru.api import Api
-from danbooru.context import CustomContext
-from danbooru.context.bot_data import BotData
-from danbooru.context.chat_data import ChatData
-from danbooru.context.user_data import UserData
+from danbooru.context import BotData, ChatData, CustomContext, UserData
+from danbooru.context.persistence import PydanticPersistence
 from danbooru.handlers import help, post, start
 from danbooru.models import Config
 
@@ -30,7 +28,10 @@ from danbooru.models import Config
 
 if __name__ == "__main__":
     app.config = Config()  # type: ignore
+
     context_types = ContextTypes(context=CustomContext, chat_data=ChatData, user_data=UserData, bot_data=BotData)
+    persistence = PydanticPersistence(app.config.DATA_DIR)
+
     app.application = (
         ApplicationBuilder()
         .post_init(app.post_init)
@@ -38,6 +39,7 @@ if __name__ == "__main__":
         .token(app.config.BOT_TOKEN)
         .defaults(Defaults(parse_mode=ParseMode.HTML))
         .context_types(context_types)
+        .persistence(persistence)
         .build()
     )
 

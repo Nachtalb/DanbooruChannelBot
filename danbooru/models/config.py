@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic import BaseSettings
 
 
@@ -12,6 +14,8 @@ class Config(BaseSettings):
 
     DANBOORU_USERNAME: str
     DANBOORU_KEY: str
+
+    DATA_DIR: Path
 
     class Config:
         env_file = ".env"

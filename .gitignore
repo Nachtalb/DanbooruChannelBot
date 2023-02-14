@@ -257,8 +257,5 @@ pip-selfcheck.json
 
 
 ### Bot
-src/
-last_post.txt
-tracker.txt
-sub_config.json
 .env*
+data/
