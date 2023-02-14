@@ -1,14 +1,14 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import ContextTypes
 from yarl import URL
 
 from danbooru import app
+from danbooru.context import ChatData, CustomContext
 from danbooru.files import document, image, video
-from danbooru.models import ChatConfig, Post
+from danbooru.models import Post
 from danbooru.utils import post_format
 
 
-async def post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def post(update: Update, context: CustomContext) -> None:
     if context.args:
         try:
             arg_one = int(context.args[0])
@@ -24,26 +24,26 @@ async def post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await _send_posts(update, context, posts)
 
 
-async def _send_posts(update: Update, context: ContextTypes.DEFAULT_TYPE, posts: list[Post]):
+async def _send_posts(update: Update, context: CustomContext, posts: list[Post]):
     if not update.message:
         return
 
-    config = context.chat_data["config"]  # type: ignore
-    for task, post in [(_prepare_file(config, post), post) for post in posts]:
+    for task, post in [(_prepare_file(context.chat_data, post), post) for post in posts]:
         data = await task
         if not data:
             continue
 
         if "text" in data:
             await update.message.reply_text(
-                f"{data['text']}\n\n{post_format(config, post)}", reply_markup=_get_markup(config, post)
+                f"{data['text']}\n\n{post_format(context.chat_data, post)}",
+                reply_markup=_get_markup(context.chat_data, post),
             )
             continue
 
         data.update(
             {
-                "caption": post_format(config, post),
-                "reply_markup": _get_markup(config, post),
+                "caption": post_format(context.chat_data, post),
+                "reply_markup": _get_markup(context.chat_data, post),
             }
         )
 
@@ -56,7 +56,7 @@ async def _send_posts(update: Update, context: ContextTypes.DEFAULT_TYPE, posts:
             await update.message.reply_document(**data)
 
 
-def _get_markup(chat: ChatConfig, post: Post):
+def _get_markup(chat: ChatData, post: Post):
     buttons = []
     if chat.show_danbooru_button:
         buttons.append(InlineKeyboardButton("📦", post.url))
@@ -74,7 +74,7 @@ def _get_markup(chat: ChatConfig, post: Post):
     return InlineKeyboardMarkup([buttons])
 
 
-async def _prepare_file(config: ChatConfig, post: Post) -> dict | None:
+async def _prepare_file(config: ChatData, post: Post) -> dict | None:
     if post.is_bad or not config.post_allowed(post):
         return
 

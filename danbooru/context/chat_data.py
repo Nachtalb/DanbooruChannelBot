@@ -11,7 +11,7 @@ class SubscriptionGroup(BaseModel):
     exclude_full_match: bool = False
 
 
-class ChatConfig(BaseModel):
+class ChatData(BaseModel):
     show_direct_button: bool = True
     show_source_button: bool = True
     show_danbooru_button: bool = True
@@ -31,6 +31,7 @@ class ChatConfig(BaseModel):
         return next(filter(lambda group: group.name == name, self.subscription_groups), None)
 
     def post_allowed(self, post: Post) -> bool:
+        # TODO: Move
         if not self.subscription_groups:
             return True
 
@@ -46,6 +47,7 @@ class ChatConfig(BaseModel):
         return any(results) if self.subscription_groups_or else all(results)
 
     def post_above_threshold(self, post: Post) -> bool:
+        # TODO: Move
         if not self.send_as_files or not post.rating:
             return False
         return RATING.level(post.rating) >= RATING.level(self.send_as_files_threshold)
