@@ -9,9 +9,6 @@ class RATING:
     q = questionable = "rating:questionable"
     e = explicit = "rating:explicit"
 
-    def __getitem__(self, value) -> str:
-        return getattr(self, value)
-
 
 class Post(BaseModel):
     id: int
@@ -59,8 +56,16 @@ class Post(BaseModel):
     bit_flags: int
 
     @property
+    def tags_rating(self) -> set[str]:
+        return set([getattr(RATING, self.rating)]) if self.rating else set()
+
+    @property
     def tags(self) -> set[str]:
         return set(self.tag_string.split())
+
+    @property
+    def tags_with_rating(self) -> set[str]:
+        return self.tags & self.tags_rating
 
     @property
     def tags_general(self) -> set[str]:

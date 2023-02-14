@@ -36,12 +36,10 @@ class ChatConfig(BaseModel):
 
         results = []
         for group in self.subscription_groups:
-            include = (
-                post.tags & group.include == group.include if group.include_full_match else post.tags & group.include
-            )
-            exclude = (
-                post.tags & group.exclude == group.exclude if group.exclude_full_match else post.tags & group.exclude
-            )
+            tags = post.tags_with_rating
+
+            include = tags & group.include == group.include if group.include_full_match else tags & group.include
+            exclude = tags & group.exclude == group.exclude if group.exclude_full_match else tags & group.exclude
 
             results.append(include and not exclude)
 
