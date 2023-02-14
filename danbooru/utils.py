@@ -9,7 +9,7 @@ def post_format(config: ChatConfig, post: Post) -> str:
     return config.template.format(
         posted_at=post.created_at.strftime("%d/%m/%Y at %H:%M"),
         id=post.id,
-        tags=", ".join(sample(tg_tags(post.tags), 15)),
+        tags=", ".join(sample(tg_tags(post.tags_general), 15)),
         artists=", ".join(tg_tags(post.tags_artist)),
         characters=", ".join(tg_tags(post.tags_character)),
     )
