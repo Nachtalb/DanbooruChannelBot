@@ -49,6 +49,8 @@ async def toggle_button(update: Update, context: CustomContext) -> int:
 
 
 async def cleanup(update: Update, context: CustomContext) -> int:
+    if update.message:
+        await update.message.reply_text("Closing settings", reply_markup=ReplyKeyboardRemove(selective=True))
     if context.chat_data:
         context.chat_data.temporary_data = {}
     return ConversationHandler.END
