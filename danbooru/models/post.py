@@ -9,6 +9,12 @@ class RATING:
     q = questionable = "rating:questionable"
     e = explicit = "rating:explicit"
 
+    levels = {"rating:general": 0, "rating:sensitive": 1, "rating:questionable": 2, "rating:explicit": 3}
+
+    @staticmethod
+    def level(rating) -> int:
+        return RATING.levels.get(getattr(RATING, rating, rating), 0)  # type: ignore
+
 
 class Post(BaseModel):
     id: int

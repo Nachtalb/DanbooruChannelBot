@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from danbooru.models.post import Post
+from danbooru.models.post import Post, RATING
 
 
 class SubscriptionGroup(BaseModel):
@@ -44,3 +44,8 @@ class ChatConfig(BaseModel):
             results.append(include and not exclude)
 
         return any(results) if self.subscription_groups_or else all(results)
+
+    def post_above_threshold(self, post: Post) -> bool:
+        if not self.send_as_files or not post.rating:
+            return False
+        return RATING.level(post.rating) >= RATING.level(self.send_as_files_threshold)
