@@ -17,7 +17,7 @@ async def post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             else:
                 posts = [await app.api.post(int(context.args[0]))]
         except ValueError:
-            posts = await app.api.posts(tags=context.args)
+            posts = await app.api.posts(tags=context.args, limit=2)
     else:
         posts = await app.api.posts(2)
 
