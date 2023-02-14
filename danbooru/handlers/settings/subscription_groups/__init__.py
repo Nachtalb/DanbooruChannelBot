@@ -1,8 +1,7 @@
 from telegram import ReplyKeyboardMarkup, Update
-from telegram.ext import ContextTypes, ConversationHandler
 
 from danbooru import app
-from danbooru.models import ChatConfig
+from danbooru.context import CustomContext
 from danbooru.utils import bool_emoji
 
 
@@ -10,11 +9,9 @@ HOME_SUBSCRIPTION_GROUPS = 8
 TEST_SUBSCRIPTION_GROUPS = 18
 
 
-async def subscription_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def subscription_groups(update: Update, context: CustomContext) -> int:
     if not update.message:
-        return ConversationHandler.END
-
-    config: ChatConfig = context.chat_data["config"]  # type: ignore
+        return HOME_SUBSCRIPTION_GROUPS
 
     markup = ReplyKeyboardMarkup(
         [
@@ -23,7 +20,7 @@ async def subscription_groups(update: Update, context: ContextTypes.DEFAULT_TYPE
                 "Create new group",
             ],
             ["Delete a group", "Test groups"],
-            [f"Toggle group policy [{'OR' if config.subscription_groups_or else 'AND'}]", "Back"],
+            [f"Toggle group policy [{'OR' if context.chat_data.subscription_groups_or else 'AND'}]", "Back"],  # type: ignore
         ],
         one_time_keyboard=True,
         selective=True,
@@ -45,13 +42,12 @@ async def subscription_groups(update: Update, context: ContextTypes.DEFAULT_TYPE
     return HOME_SUBSCRIPTION_GROUPS
 
 
-async def group_policy(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    config: ChatConfig = context.chat_data["config"]  # type: ignore
-    config.subscription_groups_or = not config.subscription_groups_or
+async def group_policy(update: Update, context: CustomContext) -> int:
+    context.chat_data.subscription_groups_or = not context.chat_data.subscription_groups_or  # type: ignore
     return await subscription_groups(update, context)
 
 
-async def test_group(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def test_group(update: Update, context: CustomContext) -> int:
     if not update.message:
         return TEST_SUBSCRIPTION_GROUPS
 
@@ -59,7 +55,7 @@ async def test_group(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return TEST_SUBSCRIPTION_GROUPS
 
 
-async def run_test_group(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def run_test_group(update: Update, context: CustomContext) -> int:
     if not update.message:
         return TEST_SUBSCRIPTION_GROUPS
 
@@ -69,9 +65,8 @@ async def run_test_group(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text("You have to send me the ID of a danbooru post.")
         return TEST_SUBSCRIPTION_GROUPS
 
-    config: ChatConfig = context.chat_data["config"]  # type: ignore
     post = await app.api.post(post_id)
-    if config.post_allowed(post):
+    if context.chat_data and context.chat_data.post_allowed(post):
         await update.message.reply_text(f"{bool_emoji(True)} The post is allowed with the current configuration")
     else:
         await update.message.reply_text(f"{bool_emoji(False)} The post is not allowed with the current configuration")

@@ -1,18 +1,15 @@
 from telegram import ReplyKeyboardMarkup, Update
-from telegram.ext import ContextTypes
 
+from danbooru.context import ChatData, CustomContext
 from danbooru.handlers.poster import post
 from danbooru.handlers.settings import home
-from danbooru.models import ChatConfig
 
 TEMPLATE = 6
 
 
-async def template(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def template(update: Update, context: CustomContext) -> int:
     if not update.message:
         return TEMPLATE
-
-    config: ChatConfig = context.chat_data["config"]  # type: ignore
 
     markup = ReplyKeyboardMarkup(
         [
@@ -29,12 +26,12 @@ async def template(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         selective=True,
     )
 
-    template = config.template
+    template = context.chat_data.template  # type: ignore
     intro = "Your current template looks like this:"
     # TODO save on user data
-    if context.chat_data and "temp_template" in context.chat_data:
+    if context.chat_data and "temp_template" in context.chat_data.temporary_data:
         intro = "Your new template will look like this:"
-        template = context.chat_data["temp_template"]
+        template = context.chat_data.temporary_data["temp_template"]
 
     text = f"""<b>TEMPLATE</b>\n\n<b>In the template you have multiple variables available:</b>
 - <code>{{posted_at}}</code> - Date and time of the posts creation
@@ -49,45 +46,41 @@ async def template(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 ------------
 
 <b>{intro}</b>
-<pre>
-{template}
-</pre>"""
+<pre>{template}</pre>"""
 
     await update.message.reply_text(text, reply_markup=markup)
     return TEMPLATE
 
 
-async def send_example_post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    config: ChatConfig = context.chat_data["config"]  # type: ignore
-    original_template = config.template
+async def send_example_post(update: Update, context: CustomContext) -> int:
+    original_template = context.chat_data.template  # type: ignore
     try:
-        config.template = context.chat_data.get("temp_template", config.template)  # type: ignore
+        context.chat_data.template = context.chat_data.temporary_data.get("temp_template", context.chat_data.template)  # type: ignore
         context.args = ["4950458"]
         await post(update, context)
     finally:
-        config.template = original_template
+        context.chat_data.template = original_template  # type: ignore
 
     return await template(update, context)
 
 
-async def change_template(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    context.chat_data["temp_template"] = update.message.text  # type: ignore
+async def change_template(update: Update, context: CustomContext) -> int:
+    context.chat_data.temporary_data["temp_template"] = update.message.text  # type: ignore
     return await template(update, context)
 
 
-async def save(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    config: ChatConfig = context.chat_data["config"]  # type: ignore
-    config.template = context.chat_data["temp_template"]  # type: ignore
-    del context.chat_data["temp_template"]  # type: ignore
+async def save(update: Update, context: CustomContext) -> int:
+    context.chat_data.template = context.chat_data.temporary_data["temp_template"]  # type: ignore
+    del context.chat_data.temporary_data["temp_template"]  # type: ignore
     return await home(update, context)
 
 
-async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    context.chat_data["temp_template"] = ChatConfig.__fields__["template"].default  # type: ignore
+async def reset(update: Update, context: CustomContext) -> int:
+    context.chat_data.temporary_data["temp_template"] = ChatData.__fields__["template"].default  # type: ignore
     return await template(update, context)
 
 
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    if context.chat_data and "temp_template" in context.chat_data:
-        del context.chat_data["temp_template"]  # type: ignore
+async def cancel(update: Update, context: CustomContext) -> int:
+    if context.chat_data and "temp_template" in context.chat_data.temporary_data:
+        del context.chat_data.temporary_data["temp_template"]  # type: ignore
     return await home(update, context)

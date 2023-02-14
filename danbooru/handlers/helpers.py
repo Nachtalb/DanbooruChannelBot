@@ -1,18 +1,13 @@
 from telegram import Update
-from telegram.ext import ContextTypes
 
-from danbooru.models import ChatConfig
+from danbooru.context import CustomContext
 
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def start(update: Update, context: CustomContext) -> None:
     if update.message:
         await update.message.reply_text("Hello")
 
 
-async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def help(update: Update, context: CustomContext) -> None:
     if update.message:
         await update.message.reply_text("Help")
-
-
-async def set_config(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    context.chat_data.setdefault("config", ChatConfig())  # type: ignore

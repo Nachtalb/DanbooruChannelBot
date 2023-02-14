@@ -2,11 +2,12 @@ import random
 import re
 from typing import Iterable, Sequence
 
-from danbooru.models import ChatConfig, Post
+from danbooru.context import ChatData
+from danbooru.models import Post
 from danbooru.models.post import RATING
 
 
-def post_format(config: ChatConfig, post: Post) -> str:
+def post_format(config: ChatData, post: Post) -> str:
     return config.template.format(
         posted_at=post.created_at.strftime("%d/%m/%Y at %H:%M"),
         id=post.id,

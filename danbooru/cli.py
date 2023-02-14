@@ -4,6 +4,7 @@ from telegram.constants import ParseMode
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
+    ContextTypes,
     ConversationHandler,
     Defaults,
     MessageHandler,
@@ -12,7 +13,10 @@ from telegram.ext import (
 
 from danbooru import app
 from danbooru.api import Api
-from danbooru.handlers import help, post, set_config, settings, start
+from danbooru.context import BotData, ChatData, CustomContext, UserData
+from danbooru.context.persistence import PydanticPersistence
+from danbooru.handlers import help, post, start
+from danbooru.handlers import settings
 from danbooru.handlers.settings import as_files, subscription_groups as sg, template
 from danbooru.handlers.settings.subscription_groups import (
     delete as sg_delete,
@@ -24,25 +28,30 @@ from danbooru.models import Config
 
 if __name__ == "__main__":
     app.config = Config()  # type: ignore
+
+    context_types = ContextTypes(context=CustomContext, chat_data=ChatData, user_data=UserData, bot_data=BotData)
+    persistence = PydanticPersistence(app.config.DATA_DIR)
+
     app.application = (
         ApplicationBuilder()
         .post_init(app.post_init)
         .post_shutdown(app.post_shutdown)
         .token(app.config.BOT_TOKEN)
         .defaults(Defaults(parse_mode=ParseMode.HTML))
+        .context_types(context_types)
+        .persistence(persistence)
         .build()
     )
 
     app.api = Api(user=app.config.DANBOORU_USERNAME, key=app.config.DANBOORU_KEY)
 
-    app.application.add_handler(MessageHandler(filters.ALL, set_config), group=-1)
     app.application.add_handler(CommandHandler("start", start))
     app.application.add_handler(CommandHandler("help", help))
     app.application.add_handler(CommandHandler("post", post))
 
     TEXT_ONLY = filters.TEXT & (~filters.COMMAND)
 
-    states = {
+    settings_conversation = {
         settings.HOME: [
             MessageHandler(filters.Regex(r"^Toggle (\w+) button"), settings.toggle_button),
             MessageHandler(filters.Regex(r"^Change message template$"), template.template),
@@ -100,9 +109,11 @@ if __name__ == "__main__":
     }
 
     settings_handler = ConversationHandler(
+        name="settings",
         entry_points=[CommandHandler("settings", settings.home)],
-        states=states,
+        states=settings_conversation,
         fallbacks=[MessageHandler(filters.Regex(re.compile(r"^/?cancel$", re.IGNORECASE)), settings.full_cancel)],
+        persistent=True,
     )
 
     app.application.add_handler(settings_handler)
