@@ -2,6 +2,7 @@ import re
 
 from telegram.constants import ParseMode
 from telegram.ext import (
+    AIORateLimiter,
     ApplicationBuilder,
     CommandHandler,
     ContextTypes,
@@ -40,6 +41,7 @@ if __name__ == "__main__":
         .defaults(Defaults(parse_mode=ParseMode.HTML))
         .context_types(context_types)
         .persistence(persistence)
+        .rate_limiter(AIORateLimiter(max_retries=2))
         .build()
     )
 
