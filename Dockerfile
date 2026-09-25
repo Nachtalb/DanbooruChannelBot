@@ -1,36 +1,21 @@
-FROM python:3.11-slim-bullseye
-
-LABEL maintainer="Nachtalb"
-
-ENV PYTHONIOENCODING=utf-8
-
-
-RUN \
- apt update && \
- apt install -yq \
-   ffmpeg \
-   libvips \
-   python3-pip
+FROM rust:1-slim-bookworm AS build
 
 WORKDIR /bot
-COPY requirements.txt /bot/requirements.txt
+COPY Cargo.toml Cargo.lock ./
+COPY src src
+RUN cargo build --release
 
-RUN \
-  pip install -U --no-cache-dir pip setuptools && \
-  pip install --no-cache-dir -r requirements.txt
+FROM debian:bookworm-slim
 
-RUN \
- apt clean -y && \
- rm -rf \
-   /var/lib/apt/lists/* \
-   /var/tmp/*
+RUN apt-get update && \
+    apt-get install -yq --no-install-recommends ffmpeg && \
+    rm -rf /var/lib/apt/lists/* && \
+    useradd -u 1000 bot && \
+    mkdir /config && chown bot /config
 
-COPY . /bot
+COPY --from=build /bot/target/release/danbooru-channel-bot /usr/local/bin/
 
-RUN groupadd -g 1000 python && \
-   useradd -u 1000 -g python python && \
-   chown -R python:python /bot
-
-USER python:python
-
-ENTRYPOINT ["python", "-m", "danbooru.bot.cli"]
+USER bot
+ENV CONFIG_FOLDER=/config
+VOLUME /config
+ENTRYPOINT ["danbooru-channel-bot"]

@@ -1,8 +1,0 @@
-services:
-  danbooru_channel_bot:
-    container_name: danbooru_channel_bot
-    build: .
-    restart: unless-stopped
-    env_file: ../.env
-    volumes:
-      - ../config:/config

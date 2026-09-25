@@ -1,6 +1,5 @@
-Dockerfile
-docker-compose.yml
-LICENSE
-MANIFEST.in
-Session.vim
-config/
+target
+data
+config
+.env
+.git
