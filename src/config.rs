@@ -106,14 +106,8 @@ fn groups(cfg: &mut Config) -> &mut Config {
 
 fn update_group(cfg: &mut Config, group: &str, tags: &[String], add: bool) -> Vec<String> {
     let groups = groups(cfg);
-    let current = groups
-        .get(group)
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten();
-    let mut set: BTreeSet<String> = current
-        .filter_map(|t| t.as_str().map(String::from))
-        .collect();
+    let current = groups.get(group).and_then(Value::as_array).into_iter().flatten();
+    let mut set: BTreeSet<String> = current.filter_map(|t| t.as_str().map(String::from)).collect();
     for tag in tags.iter().map(|t| t.trim_matches('#').to_string()) {
         if add {
             set.insert(tag);
@@ -136,11 +130,7 @@ pub fn sub_command(cfg: &mut Config, args: &[String], add: bool) -> String {
 pub fn group_command(cfg: &mut Config, args: &[String], add: bool) -> String {
     match args {
         [] => show(cfg, Some("subs")),
-        [group] if add => match groups(cfg)
-            .get(group)
-            .map(display)
-            .filter(|t| !t.is_empty())
-        {
+        [group] if add => match groups(cfg).get(group).map(display).filter(|t| !t.is_empty()) {
             Some(tags) => format!("{}={}", code(group), code(tags)),
             None => format!("No group with the name {} exists", code(group)),
         },
@@ -172,18 +162,12 @@ mod tests {
     fn commands() {
         let mut cfg = default_config().as_object().unwrap().clone();
 
-        assert_eq!(
-            config_command(&mut cfg, &args("time yes")),
-            "time=<code>true</code>"
-        );
+        assert_eq!(config_command(&mut cfg, &args("time yes")), "time=<code>true</code>");
         assert_eq!(
             config_command(&mut cfg, &args("suffix a\\nb")),
             "suffix=<code>a\nb</code>"
         );
-        assert_eq!(
-            config_command(&mut cfg, &args("id 0")),
-            "id=<code>0.0</code>"
-        );
+        assert_eq!(config_command(&mut cfg, &args("id 0")), "id=<code>0.0</code>");
         assert_eq!(
             config_command(&mut cfg, &args("subs x")),
             "<code>subs</code> cannot be changed"

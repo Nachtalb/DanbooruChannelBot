@@ -9,15 +9,27 @@ private chat. Other chats can subscribe to tags and get matching posts too. It r
 Get a bot token from [@BotFather](https://t.me/BotFather), copy `.env.example` to `.env` and fill it in.
 
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
 
-Without Docker you need Rust and `ffmpeg`/`ffprobe` on the `PATH`:
+This runs `ghcr.io/nachtalb/danbooruchannelbot`, a distroless (non-root) image built by CI from `master`
+(`latest`) and from `v*` tags. Runtime files live in the `config` volume. To build it yourself, swap `image:`
+for `build: .` in `docker-compose.yml`.
+
+Without Docker you need Rust and `ffmpeg`/`ffprobe` (for video conversion and tests) on the `PATH`:
 
 ```bash
 cargo run --release   # reads .env from the working directory
 cargo test
 ```
+
+## How posts are sent
+
+jpg/png become photos (shrunk to Telegram's 10MB / 10000px limits), other still images are converted to jpg,
+gifs are sent as animations, videos and animated images become H.264 mp4 (animation if silent, video with
+sound). Ugoira use Danbooru's rendered sample. Everything else, and anything Telegram refuses, is sent as file
+or, above the 50MB upload limit, as a text message with a link. Each file is uploaded once and reused for all
+subscribers.
 
 ## Settings
 

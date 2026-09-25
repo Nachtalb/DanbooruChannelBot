@@ -4,7 +4,7 @@ mod format;
 mod settings;
 
 use std::{
-    collections::VecDeque,
+    collections::{HashMap, VecDeque},
     path::PathBuf,
     sync::{
         Arc, Mutex, OnceLock, RwLock,
@@ -16,10 +16,10 @@ use std::{
 use chrono::Utc;
 use serde_json::{Map, Value, json};
 use teloxide::{
-    RequestError,
+    ApiError, RequestError,
     dispatching::ShutdownToken,
     prelude::*,
-    types::{InlineKeyboardButton, InlineKeyboardMarkup, InputFile, ParseMode},
+    types::{FileId, InlineKeyboardButton, InlineKeyboardMarkup, InputFile, ParseMode},
     update_listeners::webhooks,
     utils::html::escape,
 };
@@ -27,7 +27,7 @@ use tokio::sync::Notify;
 
 use crate::{
     config::Config,
-    danbooru::{Danbooru, Kind, Media, PAGE_LIMIT, Post},
+    danbooru::{Batch, Danbooru, Kind, Media, PAGE_LIMIT, Post},
     format::{Mode, Outgoing},
     settings::Settings,
 };
@@ -54,21 +54,12 @@ struct App {
     restart_in: Mutex<Option<ChatId>>,
 }
 
-/// Posts to send and up to which id everything was looked at
-struct Batch {
-    posts: Vec<Post>,
-    scanned: u64,
-}
-
 impl App {
     fn s(&self) -> Arc<Settings> {
         self.settings.read().unwrap().clone()
     }
 
-    fn update_settings(
-        &self,
-        f: impl FnOnce(&mut Settings) -> std::result::Result<(), String>,
-    ) -> Option<String> {
+    fn update_settings(&self, f: impl FnOnce(&mut Settings) -> std::result::Result<(), String>) -> Option<String> {
         let mut settings = self.settings.write().unwrap();
         let mut new = (**settings).clone();
         f(&mut new).err().or_else(|| {
@@ -94,9 +85,7 @@ impl App {
             return "The main chat is configured via the environment variables".into();
         }
         let mut subs = self.subs.lock().unwrap();
-        let cfg = subs
-            .entry(chat.to_string())
-            .or_insert_with(config::default_config);
+        let cfg = subs.entry(chat.to_string()).or_insert_with(config::default_config);
         if !cfg.is_object() {
             *cfg = config::default_config();
         }
@@ -129,7 +118,7 @@ impl App {
         let id = match std::fs::read_to_string(self.path("last_post.txt")) {
             Ok(text) => text.trim().parse()?,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                let latest = self.db.posts("", 1).await?;
+                let latest = self.db.posts("", 1, None).await?;
                 latest
                     .first()
                     .and_then(|p| p["id"].as_u64())
@@ -154,49 +143,21 @@ impl App {
         let s = self.s();
         let last = self.last_post_id().await?;
         let track = s.last_100_track && !s.search_tags.is_empty();
-        let mut raw = match s.search_tags.as_str() {
-            "" => {
-                self.db
-                    .posts(&format!("id:>{last} order:id_asc"), PAGE_LIMIT)
-                    .await?
-            }
-            tags => self.db.posts(tags, 100).await?.into_iter().rev().collect(),
+        let raw = match track {
+            true => self.db.posts(&s.search_tags, 100, None).await?,
+            false => self.db.posts(&s.search_tags, PAGE_LIMIT, Some(last)).await?,
         };
         let tracker = self.tracker.lock().unwrap().clone();
-        raw.retain(|p| {
-            p["id"].as_u64().is_some_and(|id| {
-                if track {
-                    !tracker.contains(&id)
-                } else {
-                    id > last
-                }
-            })
-        });
-
-        let mut batch = Batch {
-            posts: vec![],
-            scanned: last,
-        };
-        for value in raw {
-            let id = value["id"].as_u64().unwrap();
-            let post: Post = match serde_json::from_value(value) {
-                Ok(post) => post,
-                Err(e) => {
-                    log::debug!("Skip restricted post {id}: {e}");
-                    batch.scanned = batch.scanned.max(id);
-                    continue;
-                }
-            };
-            if (Utc::now().fixed_offset() - post.created_at).num_seconds() < s.grace_period {
-                // Posts are ascending, all following ones are newer
-                break;
-            }
-            batch.scanned = batch.scanned.max(id);
-            if format::is_ok(&post, &s.post_tag_filter) {
-                batch.posts.push(post);
-            }
-        }
-        Ok(batch)
+        let seen = |id| if track { tracker.contains(&id) } else { id <= last };
+        let ok = |post: &Post| format::is_ok(post, &s.post_tag_filter);
+        Ok(danbooru::select(
+            raw,
+            last,
+            seen,
+            s.grace_period,
+            ok,
+            Utc::now().fixed_offset(),
+        ))
     }
 
     /// Returns false if a refresh is already running
@@ -244,7 +205,12 @@ impl App {
     async fn send_post(&self, post: &Post) -> Result<()> {
         log::info!("┏ {}: Preparing", post.id);
         let media = danbooru::prepare(&self.db, post).await?;
+        if media.is_none() {
+            log::info!("┃ Too big for Telegram, sending as text");
+        }
         let s = self.s();
+        // Upload each file once, then reuse it by its Telegram file id
+        let mut uploaded = HashMap::new();
 
         let subs = self.subs.lock().unwrap().clone();
         let chats = subs
@@ -255,7 +221,7 @@ impl App {
                 continue;
             };
             log::info!("┃ Send to {chat}");
-            if let Err(e) = self.send(ChatId(chat), post, &out, &media).await {
+            if let Err(e) = self.send(ChatId(chat), post, &out, media.as_ref(), &mut uploaded).await {
                 log::error!("┃ Sending to {chat} failed: {e}");
             }
         }
@@ -268,30 +234,27 @@ impl App {
             while tracker.len() > 100 {
                 tracker.pop_front();
             }
-            let text = tracker
-                .iter()
-                .map(u64::to_string)
-                .collect::<Vec<_>>()
-                .join(" ");
+            let text = tracker.iter().map(u64::to_string).collect::<Vec<_>>().join(" ");
             std::fs::write(self.path("tracker.txt"), text)?;
         }
         Ok(())
     }
 
     /// Sends the post, waits on flood limits, follows chat migrations and falls back to a
-    /// text message with a link if Telegram refuses the file.
+    /// text message with a link if there is no file or Telegram refuses it.
     async fn send(
         &self,
         mut chat: ChatId,
         post: &Post,
         out: &Outgoing,
-        media: &Media,
+        media: Option<&Media>,
+        uploaded: &mut HashMap<Kind, FileId>,
     ) -> Result<()> {
-        let mut as_text = out.mode == Mode::Text;
+        let mut media = media.filter(|_| out.mode != Mode::Text);
         for _ in 0..5 {
-            let result = match as_text {
-                true => self.send_text(chat, post, out).await,
-                false => self.send_media(chat, out, media).await,
+            let result = match media {
+                None => self.send_text(chat, post, out).await,
+                Some(media) => self.send_media(chat, out, media, uploaded).await,
             };
             match result {
                 Ok(()) => return Ok(()),
@@ -300,9 +263,16 @@ impl App {
                     self.migrate(chat, new);
                     chat = new;
                 }
-                Err(e) if !as_text => {
+                Err(RequestError::Api(e)) if chat.0 != self.s().chat_id && chat_gone(&e) => {
+                    log::warn!("┃ Removing the subscription of {chat}: {e}");
+                    let mut subs = self.subs.lock().unwrap();
+                    subs.remove(&chat.to_string());
+                    self.save_subs(&subs);
+                    return Ok(());
+                }
+                Err(e) if media.is_some() => {
                     log::warn!("┃ Sending file failed ({e}), sending as text");
-                    as_text = true;
+                    media = None;
                 }
                 Err(e) => return Err(e.into()),
             }
@@ -318,20 +288,11 @@ impl App {
         (!out.buttons.is_empty()).then(|| InlineKeyboardMarkup::new([buttons.collect::<Vec<_>>()]))
     }
 
-    async fn send_text(
-        &self,
-        chat: ChatId,
-        post: &Post,
-        out: &Outgoing,
-    ) -> std::result::Result<(), RequestError> {
+    async fn send_text(&self, chat: ChatId, post: &Post, out: &Outgoing) -> std::result::Result<(), RequestError> {
         let mut text = out.caption.clone();
         if out.mode != Mode::Text {
             // Link the file so Telegram shows a preview of it
-            text += &format!(
-                "\n<a href=\"{}\">{}</a>",
-                escape(post.nice_file_url()),
-                post.id
-            );
+            text += &format!("\n<a href=\"{}\">{}</a>", escape(post.nice_file_url()), post.id);
         }
         let mut req = self.tg.send_message(chat, text).parse_mode(ParseMode::Html);
         if let Some(markup) = Self::markup(out) {
@@ -345,9 +306,20 @@ impl App {
         chat: ChatId,
         out: &Outgoing,
         media: &Media,
+        uploaded: &mut HashMap<Kind, FileId>,
     ) -> std::result::Result<(), RequestError> {
-        let file = |data: &Vec<u8>| InputFile::memory(data.clone()).file_name(media.name.clone());
+        let kind = if out.mode == Mode::Document {
+            Kind::Document
+        } else {
+            media.kind
+        };
+        let file = match (uploaded.get(&kind), kind) {
+            (Some(id), _) => InputFile::file_id(id.clone()),
+            (None, Kind::Document) => InputFile::memory(media.original.clone()).file_name(media.original_name.clone()),
+            (None, _) => InputFile::memory(media.data.clone()).file_name(media.name.clone()),
+        };
         let (tg, caption, markup) = (&self.tg, out.caption.clone(), Self::markup(out));
+        let thumb = media.thumb.clone().map(InputFile::memory);
 
         macro_rules! send {
             ($req:expr) => {{
@@ -355,39 +327,36 @@ impl App {
                 if let Some(markup) = markup {
                     req = req.reply_markup(markup);
                 }
-                req.await.map(drop)
+                req.await?
             }};
         }
 
-        let kind = if out.mode == Mode::Document {
-            Kind::Document
-        } else {
-            media.kind
+        let msg = match kind {
+            Kind::Document => send!(tg.send_document(chat, file)),
+            Kind::Photo => send!(tg.send_photo(chat, file)),
+            Kind::Video => {
+                let mut req = tg.send_video(chat, file).supports_streaming(true);
+                (req.duration, req.width, req.height, req.thumbnail) =
+                    (media.duration, media.width, media.height, thumb);
+                send!(req)
+            }
+            Kind::Animation => {
+                let mut req = tg.send_animation(chat, file);
+                (req.duration, req.width, req.height, req.thumbnail) =
+                    (media.duration, media.width, media.height, thumb);
+                send!(req)
+            }
         };
-        match kind {
-            Kind::Document => send!(tg.send_document(chat, file(&media.data))),
-            Kind::Photo => {
-                send!(tg.send_photo(chat, file(media.photo.as_ref().unwrap_or(&media.data))))
-            }
-            Kind::Animation | Kind::Video => {
-                let thumb = media.thumb.clone().map(InputFile::memory);
-                if kind == Kind::Video {
-                    let mut req = tg
-                        .send_video(chat, file(&media.data))
-                        .supports_streaming(true);
-                    (req.duration, req.width, req.height) =
-                        (media.duration, media.width, media.height);
-                    req.thumbnail = thumb;
-                    send!(req)
-                } else {
-                    let mut req = tg.send_animation(chat, file(&media.data));
-                    (req.duration, req.width, req.height) =
-                        (media.duration, media.width, media.height);
-                    req.thumbnail = thumb;
-                    send!(req)
-                }
-            }
+        let id = match kind {
+            Kind::Photo => msg.photo().and_then(|sizes| sizes.last()).map(|p| &p.file.id),
+            Kind::Video => msg.video().map(|v| &v.file.id),
+            Kind::Animation => msg.animation().map(|a| &a.file.id),
+            Kind::Document => msg.document().map(|d| &d.file.id),
+        };
+        if let Some(id) = id {
+            uploaded.insert(kind, id.clone());
         }
+        Ok(())
     }
 
     fn is_admin(&self, msg: &Message) -> bool {
@@ -401,11 +370,7 @@ impl App {
         if self.is_admin(msg) || msg.chat.is_private() || msg.chat.is_channel() {
             return true;
         }
-        if msg
-            .sender_chat
-            .as_ref()
-            .is_some_and(|c| c.id == msg.chat.id)
-        {
+        if msg.sender_chat.as_ref().is_some_and(|c| c.id == msg.chat.id) {
             return true; // anonymous group admin
         }
         let Some(user) = &msg.from else { return false };
@@ -447,21 +412,14 @@ impl App {
                     None => u.full_name(),
                 });
                 let info = json!({"chat_id": chat.0, "message_id": msg.id.0, "user": user});
-                format!(
-                    "<code>{}</code>",
-                    escape(&serde_json::to_string_pretty(&info)?)
-                )
+                format!("<code>{}</code>", escape(&serde_json::to_string_pretty(&info)?))
             }
             "config" | "sub" | "unsub" | "gsub" | "gunsub" if !self.can_configure(&msg).await => {
                 "Only admins of this chat can do that".into()
             }
             "config" => self.edit_config(chat.0, |cfg| config::config_command(cfg, &args)),
-            "sub" | "unsub" => {
-                self.edit_config(chat.0, |cfg| config::sub_command(cfg, &args, cmd == "sub"))
-            }
-            "gsub" | "gunsub" => self.edit_config(chat.0, |cfg| {
-                config::group_command(cfg, &args, cmd == "gsub")
-            }),
+            "sub" | "unsub" => self.edit_config(chat.0, |cfg| config::sub_command(cfg, &args, cmd == "sub")),
+            "gsub" | "gunsub" => self.edit_config(chat.0, |cfg| config::group_command(cfg, &args, cmd == "gsub")),
             key if config::SAFE_KEYS.contains(&key) || config::UNSAFE_KEYS.contains(&key) => {
                 if !self.can_configure(&msg).await {
                     return Ok(());
@@ -509,10 +467,7 @@ impl App {
                     .map(|u| format!("https://t.me/{u}"))
                     .or(info.invite_link().map(String::from))
                 {
-                    Some(link) => format!(
-                        "Chat: <a href=\"{}\">{name}</a> -> <code>{id}</code>",
-                        escape(&link)
-                    ),
+                    Some(link) => format!("Chat: <a href=\"{}\">{name}</a> -> <code>{id}</code>", escape(&link)),
                     None => format!("Chat: {name} -> <code>{id}</code>"),
                 }
             }
@@ -526,21 +481,13 @@ impl App {
             }
             _ => return Ok(()),
         };
-        self.tg
-            .send_message(chat, reply)
-            .parse_mode(ParseMode::Html)
-            .await?;
+        self.tg.send_message(chat, reply).parse_mode(ParseMode::Html).await?;
         Ok(())
     }
 
     /// /settings [KEY [VALUE...]]
     fn settings_command(&self, args: &[String]) -> String {
-        let show = |s: &Settings, key: &str| {
-            format!(
-                "{key}=<code>{}</code>",
-                escape(&s.get(key).unwrap_or_default())
-            )
-        };
+        let show = |s: &Settings, key: &str| format!("{key}=<code>{}</code>", escape(&s.get(key).unwrap_or_default()));
         let s = self.s();
         match args {
             [] => settings::RUNTIME_KEYS
@@ -565,6 +512,21 @@ impl App {
     }
 }
 
+/// The bot can never post to this chat again
+fn chat_gone(e: &ApiError) -> bool {
+    use ApiError::*;
+    matches!(
+        e,
+        BotBlocked
+            | BotKicked
+            | BotKickedFromSupergroup
+            | BotKickedFromChannel
+            | ChatNotFound
+            | GroupDeactivated
+            | UserDeactivated
+    )
+}
+
 fn load_subs(path: &PathBuf) -> Map<String, Value> {
     let text = std::fs::read_to_string(path).unwrap_or_default();
     match text.trim() {
@@ -577,9 +539,7 @@ fn load_subs(path: &PathBuf) -> Map<String, Value> {
 #[cfg(unix)]
 fn restart(chat: ChatId) -> ! {
     use std::os::unix::process::CommandExt;
-    let args = std::env::args()
-        .skip(1)
-        .filter(|a| !a.starts_with(RESTARTED_ARG));
+    let args = std::env::args().skip(1).filter(|a| !a.starts_with(RESTARTED_ARG));
     let exe = std::env::current_exe().expect("could not find own executable");
     let error = std::process::Command::new(exe)
         .args(args)
@@ -604,28 +564,19 @@ async fn main() {
         .get_me()
         .await
         .expect("could not reach Telegram, is TELEGRAM_API_TOKEN correct?");
-    let db = Danbooru::new(s.danbooru_user.clone(), s.danbooru_api.clone())
+    let db = Danbooru::new(settings::DANBOORU_URL, s.danbooru_user.clone(), s.danbooru_api.clone())
         .await
         .expect("could not reach Danbooru");
     let tracker = std::fs::read_to_string(s.config_folder.join("tracker.txt")).unwrap_or_default();
     log::info!(
         "Start {} as @{}",
-        if webhook.is_some() {
-            "webhook"
-        } else {
-            "polling"
-        },
+        if webhook.is_some() { "webhook" } else { "polling" },
         me.username()
     );
 
     let app = Arc::new(App {
         subs: Mutex::new(load_subs(&s.config_folder.join("sub_config.json"))),
-        tracker: Mutex::new(
-            tracker
-                .split_whitespace()
-                .filter_map(|id| id.parse().ok())
-                .collect(),
-        ),
+        tracker: Mutex::new(tracker.split_whitespace().filter_map(|id| id.parse().ok()).collect()),
         last_post: AtomicU64::new(0),
         job: AtomicBool::new(s.auto_start),
         refreshing: AtomicBool::new(false),
@@ -641,9 +592,7 @@ async fn main() {
     });
 
     if let Some(chat) = std::env::args().find_map(|a| a.strip_prefix(RESTARTED_ARG)?.parse().ok()) {
-        let _ = tg
-            .send_message(ChatId(chat), "Bot has successfully restarted.")
-            .await;
+        let _ = tg.send_message(ChatId(chat), "Bot has successfully restarted.").await;
     }
 
     let scheduler = app.clone();
@@ -672,9 +621,7 @@ async fn main() {
 
     match webhook {
         Some(options) => {
-            let listener = webhooks::axum(tg, options)
-                .await
-                .expect("could not set up the webhook");
+            let listener = webhooks::axum(tg, options).await.expect("could not set up the webhook");
             let errors = LoggingErrorHandler::with_custom_text("Update listener error");
             dispatcher.dispatch_with_listener(listener, errors).await
         }

@@ -37,16 +37,11 @@ pub fn truthy(v: &Value) -> bool {
 
 /// Only letters, digits and "_" are part of a Telegram hashtag
 pub fn clean_tag(tag: &str) -> String {
-    tag.chars()
-        .filter(|c| c.is_alphanumeric() || *c == '_')
-        .collect()
+    tag.chars().filter(|c| c.is_alphanumeric() || *c == '_').collect()
 }
 
 pub fn hashtags<'a>(tags: impl IntoIterator<Item = &'a String>) -> String {
-    let tags = tags
-        .into_iter()
-        .map(|t| clean_tag(t))
-        .filter(|t| !t.is_empty());
+    let tags = tags.into_iter().map(|t| clean_tag(t)).filter(|t| !t.is_empty());
     tags.map(|t| format!("#{t}")).collect::<Vec<_>>().join(" ")
 }
 
@@ -96,19 +91,14 @@ pub fn source_url(post: &Post) -> Option<Url> {
 }
 
 fn host(url: &Url) -> &str {
-    url.host_str()
-        .unwrap_or_default()
-        .trim_start_matches("www.")
+    url.host_str().unwrap_or_default().trim_start_matches("www.")
 }
 
 pub fn named_source(post: &Post, src: &Url) -> String {
     let parts: Vec<&str> = host(src).split('.').collect();
     let name = title(parts.iter().rev().nth(1).unwrap_or(&parts[0]));
     match name.as_str() {
-        "Twitter" | "X" => format!(
-            "{name} - @{}",
-            src.path().split('/').nth(1).unwrap_or_default()
-        ),
+        "Twitter" | "X" => format!("{name} - @{}", src.path().split('/').nth(1).unwrap_or_default()),
         "Fanbox" if parts.len() > 2 => format!("{name} - {}", title(parts[parts.len() - 3])),
         _ if !post.tag_string_artist.is_empty() => {
             format!("{name} - {}", title(&post.tag_string_artist))
@@ -118,11 +108,7 @@ pub fn named_source(post: &Post, src: &Url) -> String {
 }
 
 /// Tags in `shown` come first, the rest is filled up with random tags to `max`
-pub fn pick_tags(
-    available: &BTreeSet<String>,
-    shown: &BTreeSet<String>,
-    max: usize,
-) -> Vec<String> {
+pub fn pick_tags(available: &BTreeSet<String>, shown: &BTreeSet<String>, max: usize) -> Vec<String> {
     let mut tags: Vec<String> = available.intersection(shown).cloned().collect();
     let fill = max.saturating_sub(tags.len());
     let random = available.difference(shown).sample(&mut rand::rng(), fill);
@@ -148,11 +134,7 @@ fn visible_len(html: &str) -> usize {
 
 /// Build the message for a chat. `chat` is None for the main chat, else the subscribers config.
 /// Returns None if the post does not match any of the subscribers groups.
-pub fn create_post(
-    post: &Post,
-    chat: Option<&Map<String, Value>>,
-    s: &Settings,
-) -> Option<Outgoing> {
+pub fn create_post(post: &Post, chat: Option<&Map<String, Value>>, s: &Settings) -> Option<Outgoing> {
     let get = |key: &str| {
         chat.and_then(|c| c.get(key))
             .or(s.defaults.get(key))
@@ -173,11 +155,7 @@ pub fn create_post(
         let cleaned: Vec<String> = extended.iter().map(|t| clean_tag(t)).collect();
         extended.extend(cleaned);
 
-        let groups = chat
-            .get("subs")
-            .and_then(Value::as_object)
-            .cloned()
-            .unwrap_or_default();
+        let groups = chat.get("subs").and_then(Value::as_object).cloned().unwrap_or_default();
         let (group, _) = groups.iter().find(|(name, check)| {
             let check: Vec<String> = serde_json::from_value((*check).clone()).unwrap_or_default();
             match_tags(&extended, &check, *name != "OR")
@@ -218,10 +196,7 @@ pub fn create_post(
     if suffix.contains("{src}") || suffix.contains("{namedsrc}") {
         if let Some(src) = &source {
             let href = escape(src.as_str()).replace('"', "&quot;");
-            let named = format!(
-                "<a href=\"{href}\">{}</a>",
-                escape(&named_source(post, src))
-            );
+            let named = format!("<a href=\"{href}\">{}</a>", escape(&named_source(post, src)));
             tail += &suffix
                 .replace("{src}", &escape(src.as_str()))
                 .replace("{namedsrc}", &named);
@@ -242,11 +217,7 @@ pub fn create_post(
     };
 
     // Drop random tags (they come last) until the caption fits Telegrams limit
-    let limit = if mode == Mode::Text {
-        TEXT_LIMIT
-    } else {
-        CAPTION_LIMIT
-    };
+    let limit = if mode == Mode::Text { TEXT_LIMIT } else { CAPTION_LIMIT };
     let mut tags = if on("tags") {
         pick_tags(&general, &s.shown_tags, s.max_tags)
     } else {
@@ -280,11 +251,7 @@ pub fn create_post(
         }
     }
 
-    Some(Outgoing {
-        caption,
-        buttons,
-        mode,
-    })
+    Some(Outgoing { caption, buttons, mode })
 }
 
 #[cfg(test)]
@@ -307,11 +274,9 @@ mod tests {
             "id": 5, "created_at": "2020-04-04T14:08:00.000-04:00", "rating": "g",
             "tag_string": "1girl yuri miku some_artist", "tag_string_artist": "some_artist",
             "tag_string_character": "miku", "source": "https://twitter.com/foo/status/1?a=1&b=2",
-            "file_url": "https://cdn.donmai.us/a.png",
+            "file_ext": "png", "file_url": "https://cdn.donmai.us/a.png",
         });
-        post.as_object_mut()
-            .unwrap()
-            .extend(extra.as_object().unwrap().clone());
+        post.as_object_mut().unwrap().extend(extra.as_object().unwrap().clone());
         serde_json::from_value(post).unwrap()
     }
 
@@ -365,10 +330,7 @@ mod tests {
         assert!(visible_len(&out.caption) <= CAPTION_LIMIT);
 
         let out = create_post(&post(json!({"pixiv_id": 7, "rating": "e"})), None, &s).unwrap();
-        assert_eq!(
-            out.buttons[1].1.as_str(),
-            "https://www.pixiv.net/artworks/7"
-        );
+        assert_eq!(out.buttons[1].1.as_str(), "https://www.pixiv.net/artworks/7");
     }
 
     #[test]
@@ -377,9 +339,10 @@ mod tests {
         let chat = json!({"subs": {"OR": ["nope", "ratinggeneral"]}, "suffix": "{namedsrc}", "no_file": 1});
         let out = create_post(&post(json!({})), chat.as_object(), &s).unwrap();
         assert_eq!(out.mode, Mode::Text);
-        assert!(out.caption.ends_with(
-            "<a href=\"https://twitter.com/foo/status/1?a=1&amp;b=2\">Twitter - @foo</a>"
-        ));
+        assert!(
+            out.caption
+                .ends_with("<a href=\"https://twitter.com/foo/status/1?a=1&amp;b=2\">Twitter - @foo</a>")
+        );
 
         let chat = json!({"subs": {"OR": [], "g": ["yuri", "-miku"]}});
         assert!(create_post(&post(json!({})), chat.as_object(), &s).is_none());

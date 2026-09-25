@@ -46,9 +46,7 @@ fn flag(name: &str, default: bool) -> bool {
 
 fn num<T: FromStr>(name: &str, default: T) -> T {
     var(name).map_or(default, |v| {
-        v.trim()
-            .parse()
-            .unwrap_or_else(|_| panic!("{name} must be a number"))
+        v.trim().parse().unwrap_or_else(|_| panic!("{name} must be a number"))
     })
 }
 
@@ -117,10 +115,7 @@ pub fn from_env() -> (Settings, Option<webhooks::Options>) {
     let settings = Settings {
         token: required("TELEGRAM_API_TOKEN"),
         admins: list("ADMINS", "").iter().map(|a| admin_name(a)).collect(),
-        chat_id: required("CHAT_ID")
-            .trim()
-            .parse()
-            .expect("CHAT_ID must be a number"),
+        chat_id: required("CHAT_ID").trim().parse().expect("CHAT_ID must be a number"),
         log_level: log_level.unwrap_or(if flag("DEBUG", false) {
             LevelFilter::Debug
         } else {
@@ -185,10 +180,7 @@ impl Settings {
                 Some(c @ ('+' | '-')) => (Some(c), &value[1..]),
                 _ => (None, value),
             };
-            let items = parse_list(items)
-                .iter()
-                .map(|i| map(i))
-                .collect::<BTreeSet<_>>();
+            let items = parse_list(items).iter().map(|i| map(i)).collect::<BTreeSet<_>>();
             match action {
                 Some('+') => set.extend(items),
                 Some(_) => set.retain(|i| !items.contains(i)),
@@ -196,14 +188,11 @@ impl Settings {
             }
         };
         fn number<T: FromStr>(key: &str, v: &str) -> Result<T, String> {
-            v.trim()
-                .parse()
-                .map_err(|_| format!("{key} must be a number"))
+            v.trim().parse().map_err(|_| format!("{key} must be a number"))
         }
         match key {
             "LOG_LEVEL" => {
-                self.log_level =
-                    parse_level(value).ok_or("use one of off, error, warn, info, debug, trace")?;
+                self.log_level = parse_level(value).ok_or("use one of off, error, warn, info, debug, trace")?;
                 log::set_max_level(self.log_level);
             }
             "SHOWN_TAGS" => edit(&mut self.shown_tags, str::to_string),
@@ -212,16 +201,8 @@ impl Settings {
             "MAX_TAGS" => self.max_tags = number(key, value)?,
             "CHAT_ID" => self.chat_id = number(key, value)?,
             "SEARCH_TAGS" => self.search_tags = value.trim().into(),
-            "SHOW_ARTIST_TAG" => {
-                _ = self
-                    .defaults
-                    .insert("artist".into(), parse_bool(value).into())
-            }
-            "SHOW_CHARACTER_TAG" => {
-                _ = self
-                    .defaults
-                    .insert("characters".into(), parse_bool(value).into())
-            }
+            "SHOW_ARTIST_TAG" => _ = self.defaults.insert("artist".into(), parse_bool(value).into()),
+            "SHOW_CHARACTER_TAG" => _ = self.defaults.insert("characters".into(), parse_bool(value).into()),
             _ => return Err(format!("{key} can't be changed at runtime")),
         }
         Ok(())

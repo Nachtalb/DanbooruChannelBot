@@ -1,10 +1,14 @@
 services:
   danbooru_channel_bot:
+    image: ghcr.io/nachtalb/danbooruchannelbot:latest
+    # build: .
     container_name: danbooru_channel_bot
-    build: .
     restart: unless-stopped
     env_file: .env
     # ports:
     #   - 5555:5555  # webhook mode
     volumes:
-      - ./config:/config
+      - config:/config
+
+volumes:
+  config:
