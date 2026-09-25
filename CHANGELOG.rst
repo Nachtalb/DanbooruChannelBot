@@ -4,6 +4,7 @@ Changelog
 1.2.1 (unreleased)
 
 - Fix messages not sent when source starts with "file://"
+- Add Rust rewrite of the bot in rust/
 ------------------
 
 
